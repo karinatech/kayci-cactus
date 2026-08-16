@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const SPECIALIST_EMAIL = process.env.SPECIALIST_EMAIL || 'specialist@example.com';
-const SPECIALIST_NAME = process.env.SPECIALIST_NAME || 'Kayci Cactus';
+const SPECIALIST_NAME = process.env.SPECIALIST_NAME || 'Kayci Sonoran';
 
 // ── Services ──
 const SERVICES = [
@@ -368,6 +368,6 @@ app.post('/api/admin/waitlist/:id/decline', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🌵 Kayci Cactus server running → http://localhost:${PORT}`);
+  console.log(`🌵 Kayci Sonoran server running → http://localhost:${PORT}`);
   console.log(`📋 Admin portal → http://localhost:${PORT}/admin.html`);
 });

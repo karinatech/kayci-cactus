@@ -9,7 +9,7 @@ const TABLE_NAME = process.env.DDB_TABLE || 'kayci-cactus-data';
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'saguaro2024';
 const SPECIALIST_EMAIL = process.env.SPECIALIST_EMAIL || 'specialist@example.com';
-const SPECIALIST_NAME = process.env.SPECIALIST_NAME || 'Kayci Cactus';
+const SPECIALIST_NAME = process.env.SPECIALIST_NAME || 'Kayci Sonoran';
 
 const ALL_TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
 
