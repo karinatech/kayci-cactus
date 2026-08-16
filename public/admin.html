@@ -208,6 +208,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
       <button class="tab-btn active" data-tab="appointments" onclick="switchTab('appointments')">Appointments <span class="tab-badge pending" id="appt-badge" style="display:none">0</span></button>
       <button class="tab-btn" data-tab="availability" onclick="switchTab('availability')">Availability</button>
       <button class="tab-btn" data-tab="waitlist" onclick="switchTab('waitlist')">Waitlist <span class="tab-badge waiting" id="wl-badge" style="display:none">0</span></button>
+      <button class="tab-btn" data-tab="services" onclick="switchTab('services')">Services</button>
     </div>
 
     <!-- APPOINTMENTS TAB -->
@@ -284,6 +285,15 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
       </div>
       <div class="appt-list" id="wl-list"></div>
     </div>
+
+    <!-- SERVICES TAB -->
+    <div class="tab-content" id="tab-services">
+      <div class="avail-section">
+        <h3>Manage Services</h3>
+        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1.5rem;">Edit service names, descriptions, prices, and images. Changes appear instantly on the website.</p>
+        <div id="services-admin-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -314,6 +324,7 @@ let adminToken = null;
 let allAppointments = [];
 let allWaitlist = [];
 let availabilityData = {};
+let servicesAdminData = [];
 let currentFilter = 'all';
 let currentWlFilter = 'all';
 let currentTab = 'appointments';
@@ -351,11 +362,12 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
   if (tab === 'availability') renderAvailabilityManager();
+  if (tab === 'services') renderServicesAdmin();
 }
 
 // ── Load all data ──
 async function loadAll() {
-  await Promise.all([loadAppointments(), loadWaitlist(), loadAvailability()]);
+  await Promise.all([loadAppointments(), loadWaitlist(), loadAvailability(), loadServicesAdmin()]);
   renderAll();
 }
 
@@ -365,6 +377,7 @@ function renderAll() {
   renderWaitlist();
   updateWlStats();
   renderAvailabilityManager();
+  renderServicesAdmin();
   updateBadges();
 }
 
@@ -720,6 +733,122 @@ function updateBadges() {
   const wlBadge = document.getElementById('wl-badge');
   if (pendingCount > 0) { apptBadge.textContent = pendingCount; apptBadge.style.display = 'inline-flex'; } else { apptBadge.style.display = 'none'; }
   if (waitingCount > 0) { wlBadge.textContent = waitingCount; wlBadge.style.display = 'inline-flex'; } else { wlBadge.style.display = 'none'; }
+}
+
+// ── Services Management ──
+async function loadServicesAdmin() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/services`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+    if (!res.ok) { console.error('Failed to load services:', res.status); return; }
+    servicesAdminData = await res.json();
+  } catch (e) { console.error('Error loading services:', e); }
+}
+
+function renderServicesAdmin() {
+  const container = document.getElementById('services-admin-list');
+  if (!container) return;
+  if (!servicesAdminData || servicesAdminData.length === 0) {
+    container.innerHTML = '<p style="color:var(--ink-soft);font-size:0.9rem;">No services found.</p>';
+    return;
+  }
+  container.innerHTML = servicesAdminData.map(s => `
+    <div class="service-edit-card" style="background:var(--bg-card);border:1px solid var(--border);margin-bottom:1.5rem;overflow:hidden;">
+      <div style="display:flex;gap:0;align-items:stretch;">
+        <div style="width:120px;height:120px;flex-shrink:0;background-image:url('${s.image}');background-size:cover;background-position:center;" id="img-preview-${s.id}"></div>
+        <div style="flex:1;padding:1rem 1.5rem;">
+          <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;margin-bottom:0.3rem;">${s.name}</div>
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.3rem;">${s.duration} · $${s.price}</div>
+          <div style="font-size:0.85rem;color:var(--ink-soft);">${s.desc.substring(0, 80)}${s.desc.length > 80 ? '...' : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;padding-right:1rem;">
+          <button class="filter-btn active" onclick="editService('${s.id}')">Edit</button>
+        </div>
+      </div>
+      <div id="edit-form-${s.id}" style="display:none;padding:1.5rem;border-top:1px solid var(--border);background:var(--bg);">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+          <div class="form-field" style="margin:0;">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Service Name</label>
+            <input type="text" id="svc-name-${s.id}" value="${s.name.replace(/"/g, '&quot;')}" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);">
+          </div>
+          <div class="form-field" style="margin:0;">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Price ($)</label>
+            <input type="number" id="svc-price-${s.id}" value="${s.price}" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);">
+          </div>
+          <div class="form-field" style="margin:0;">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Duration</label>
+            <input type="text" id="svc-duration-${s.id}" value="${s.duration}" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);">
+          </div>
+          <div class="form-field" style="margin:0;">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Image URL</label>
+            <input type="text" id="svc-image-${s.id}" value="${s.image}" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);" oninput="document.getElementById('img-preview-${s.id}').style.backgroundImage='url('+this.value+')'">
+          </div>
+        </div>
+        <div class="form-field" style="margin:0 0 1rem 0;">
+          <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Description</label>
+          <textarea id="svc-desc-${s.id}" rows="2" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);resize:vertical;">${s.desc.replace(/</g, '&lt;')}</textarea>
+        </div>
+        <div style="display:flex;gap:0.8rem;">
+          <button class="filter-btn" onclick="cancelEdit('${s.id}')">Cancel</button>
+          <button class="filter-btn active" onclick="saveService('${s.id}')">Save Changes</button>
+          <button class="filter-btn" onclick="resetService('${s.id}')" style="margin-left:auto;color:var(--danger);">Reset to Default</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function editService(id) {
+  document.getElementById(`edit-form-${id}`).style.display = 'block';
+}
+function cancelEdit(id) {
+  document.getElementById(`edit-form-${id}`).style.display = 'none';
+}
+
+async function saveService(id) {
+  const name = document.getElementById(`svc-name-${id}`).value.trim();
+  const desc = document.getElementById(`svc-desc-${id}`).value.trim();
+  const price = document.getElementById(`svc-price-${id}`).value;
+  const image = document.getElementById(`svc-image-${id}`).value.trim();
+  const duration = document.getElementById(`svc-duration-${id}`).value.trim();
+
+  if (!name || !desc || !price || !image || !duration) {
+    alert('All fields are required.'); return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/services/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ name, desc, price: Number(price), image, duration })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(`Failed to save: ${err.error || res.statusText}`); return;
+    }
+    // Update local data
+    const idx = servicesAdminData.findIndex(s => s.id === id);
+    if (idx >= 0) { servicesAdminData[idx] = { ...servicesAdminData[idx], name, desc, price: Number(price), image, duration }; }
+    renderServicesAdmin();
+    showToast(`Service "${name}" saved`);
+  } catch (e) {
+    alert(`Network error: ${e.message}`);
+  }
+}
+
+async function resetService(id) {
+  if (!confirm('Reset this service to its default values?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/services/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${adminToken}` }
+    });
+    if (!res.ok) { alert('Failed to reset'); return; }
+    await loadServicesAdmin();
+    renderServicesAdmin();
+    showToast('Service reset to default');
+  } catch (e) {
+    alert(`Network error: ${e.message}`);
+  }
 }
 
 // ── Toast ──
