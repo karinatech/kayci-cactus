@@ -555,8 +555,13 @@ function declineWaitlist() {
 async function loadAvailability() {
   try {
     const res = await fetch(`${API_BASE}/api/admin/availability`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+    if (!res.ok) { console.error('Failed to load availability:', res.status); return; }
     availabilityData = await res.json();
-  } catch (e) { availabilityData = {}; }
+    // Filter out dates with empty slot arrays (stale/bad data)
+    Object.keys(availabilityData).forEach(k => {
+      if (!availabilityData[k] || availabilityData[k].length === 0) delete availabilityData[k];
+    });
+  } catch (e) { console.error('Error loading availability:', e); }
 }
 
 function renderAvailabilityManager() {
@@ -628,20 +633,25 @@ async function saveAvailability() {
   if (!date) { alert('Please select a date.'); return; }
 
   const slots = Array.from(selectedAvailSlots).sort();
+  if (slots.length === 0) { alert('Please select at least one time slot.'); return; }
 
   try {
-    await fetch(`${API_BASE}/api/admin/availability`, {
+    const res = await fetch(`${API_BASE}/api/admin/availability`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
       body: JSON.stringify({ date, slots })
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(`Failed to save: ${err.error || res.statusText}`);
+      return;
+    }
     availabilityData[date] = slots;
+    renderExistingAvailability();
+    showToast(`Availability saved for ${date}`);
   } catch (e) {
-    availabilityData[date] = slots; // local fallback
+    alert(`Network error saving availability: ${e.message}`);
   }
-
-  renderExistingAvailability();
-  showToast(`Availability saved for ${date}`);
 }
 
 async function saveBulkAvailability() {
@@ -650,6 +660,7 @@ async function saveBulkAvailability() {
   if (!startDate || !endDate) { alert('Please select start and end dates.'); return; }
 
   const slots = Array.from(selectedBulkSlots).sort();
+  if (slots.length === 0) { alert('Please select at least one time slot.'); return; }
 
   try {
     const res = await fetch(`${API_BASE}/api/admin/availability/bulk`, {
@@ -657,18 +668,18 @@ async function saveBulkAvailability() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
       body: JSON.stringify({ startDate, endDate, slots })
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(`Failed to save: ${err.error || res.statusText}`);
+      return;
+    }
     const data = await res.json();
     if (data.dates) data.dates.forEach(d => availabilityData[d] = [...slots]);
+    renderExistingAvailability();
+    showToast(`Availability saved for ${data.dates ? data.dates.length : 'multiple'} dates`);
   } catch (e) {
-    // local fallback
-    const start = new Date(startDate), end = new Date(endDate);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      availabilityData[d.toISOString().split('T')[0]] = [...slots];
-    }
+    alert(`Network error saving bulk availability: ${e.message}`);
   }
-
-  renderExistingAvailability();
-  showToast(`Availability saved for date range`);
 }
 
 async function clearAvailability() {

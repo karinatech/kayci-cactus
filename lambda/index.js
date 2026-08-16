@@ -269,6 +269,7 @@ async function handleRequest(event) {
     if (!authed()) return response(401, { error: 'Unauthorized' });
     const { startDate, endDate, slots } = body;
     if (!startDate || !endDate || !slots) return response(400, { error: 'startDate, endDate, and slots required' });
+    if (!Array.isArray(slots) || slots.length === 0) return response(400, { error: 'At least one time slot required' });
     const start = new Date(startDate);
     const end = new Date(endDate);
     const dates = [];

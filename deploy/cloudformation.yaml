@@ -4,24 +4,23 @@ Description: 'Kayci Cactus — Massage booking website (Amplify + Lambda + API G
 Parameters:
   GitHubOwner:
     Type: String
-    Description: GitHub repo owner
     Default: karinatech
   GitHubRepo:
     Type: String
-    Description: GitHub repo name
     Default: kayci-cactus
   GitHubBranch:
     Type: String
-    Description: GitHub branch
     Default: main
   GitHubToken:
     Type: String
-    Description: GitHub personal access token for Amplify
     NoEcho: true
   SpecialistEmail:
     Type: String
-    Description: Email address for the massage specialist to receive booking notifications
     Default: specialist@example.com
+  DeployBucketName:
+    Type: String
+    Default: kayci-cactus-deploy-061051222996
+    Description: Pre-created S3 bucket containing lambda.zip
 
 Resources:
   # ── DynamoDB Table ──
@@ -92,7 +91,7 @@ Resources:
           SPECIALIST_NAME: 'Kayci Cactus'
           ADMIN_TOKEN: 'saguaro2024'
       Code:
-        S3Bucket: !Ref KayciDeployBucket
+        S3Bucket: !Ref DeployBucketName
         S3Key: lambda.zip
 
   # ── API Gateway ──
@@ -105,21 +104,18 @@ Resources:
         Types:
           - REGIONAL
 
-  # API Gateway Resource: /api
   ApiResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       ParentId: !GetAtt KayciApi.RootResourceId
       PathPart: 'api'
 
-  # Proxy resource: /api/{proxy+}
   ApiProxyResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       ParentId: !Ref ApiResource
       PathPart: '{proxy+}'
 
-  # Proxy method: ANY /api/{proxy+}
   ApiProxyMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -132,7 +128,6 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${KayciLambdaFunction.Arn}/invocations
 
-  # Root method: ANY /api
   ApiRootMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -145,7 +140,6 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${KayciLambdaFunction.Arn}/invocations
 
-  # Lambda permission for API Gateway
   KayciLambdaApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -154,7 +148,6 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${KayciApi}/*/*/*
 
-  # API Gateway deployment
   KayciApiDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
@@ -163,36 +156,34 @@ Resources:
     Properties:
       RestApiId: !Ref KayciApi
 
-  # API Gateway stage
   KayciApiStage:
     Type: AWS::ApiGateway::Stage
     Properties:
       RestApiId: !Ref KayciApi
       DeploymentId: !Ref KayciApiDeployment
       StageName: prod
-      MethodSettings:
-        - ResourcePath: '/*'
-          HttpMethod: '*'
-          LoggingLevel: INFO
-          DataTraceEnabled: true
 
-  # ── S3 Bucket for Lambda deployment package ──
-  KayciDeployBucket:
-    Type: AWS::S3::Bucket
+  # ── IAM Role for Amplify ──
+  KayciAmplifyRole:
+    Type: AWS::IAM::Role
     Properties:
-      BucketName: !Sub kayci-cactus-deploy-${AWS::AccountId}
-      LifecycleConfiguration:
-        Rules:
-          - Id: DeleteOldObjects
-            Status: Enabled
-            ExpirationInDays: 7
+      RoleName: kayci-cactus-amplify-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: amplify.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/PowerUserAccess
 
   # ── Amplify App ──
   KayciAmplifyApp:
     Type: AWS::Amplify::App
     Properties:
       Name: kayci-cactus
-      Description: Kayci Cactus — Arizona massage therapy website
+      Description: Kayci Cactus massage therapy website
       Repository: !Sub https://github.com/${GitHubOwner}/${GitHubRepo}
       AccessToken: !Ref GitHubToken
       Platform: WEB
@@ -211,7 +202,7 @@ Resources:
           cache:
             paths: []
       CustomRules:
-        - Source: '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map)$)([^.]+$)/>'
+        - Source: '/<.*>'
           Target: '/index.html'
           Status: '200'
       EnvironmentVariables:
@@ -220,35 +211,20 @@ Resources:
       IAMServiceRole: !GetAtt KayciAmplifyRole.Arn
       EnableBranchAutoBuild: true
 
-  # Amplify branch
+  # Amplify branch — uses !Ref (returns AppId), NOT !GetAtt
   KayciAmplifyBranch:
     Type: AWS::Amplify::Branch
     Properties:
-      AppId: !GetAtt KayciAmplifyApp.AppId
+      AppId: !Ref KayciAmplifyApp
       BranchName: !Ref GitHubBranch
       DisplayName: Production
       EnableAutoBuild: true
       Stage: PRODUCTION
 
-  # ── IAM Role for Amplify ──
-  KayciAmplifyRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: kayci-cactus-amplify-role
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: amplify.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/PowerUserAccess
-
 Outputs:
   WebsiteURL:
     Description: Amplify website URL
-    Value: !Sub https://${GitHubBranch}.${KayciAmplifyApp.AppId}.amplifyapp.com
+    Value: !Sub https://${GitHubBranch}.${KayciAmplifyApp}.amplifyapp.com
   ApiURL:
     Description: API Gateway URL
     Value: !Sub https://${KayciApi}.execute-api.${AWS::Region}.amazonaws.com/prod
@@ -258,3 +234,6 @@ Outputs:
   LambdaFunction:
     Description: Lambda function name
     Value: !Ref KayciLambdaFunction
+  AmplifyAppId:
+    Description: Amplify App ID
+    Value: !Ref KayciAmplifyApp
