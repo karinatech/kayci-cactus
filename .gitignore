@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+*.log
+.env
+deploy/iam-policy.json
+deploy/apply-iam-policy.sh
+/tmp/

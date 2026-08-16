@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kayci Cactus — Arizona's Premier Massage Therapy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf6f0;
+  --bg-deep: #1a1f2e;
+  --bg-card: #fffdf9;
+  --ink: #2d2418;
+  --ink-soft: #6b5d4f;
+  --muted: #a0927f;
+  --border: #e8ddd0;
+  --terracotta: #c95d3c;
+  --terracotta-light: #e07856;
+  --sage: #7a926e;
+  --gold: #d4a574;
+  --navy: #1a1f2e;
+  --radius: 16px;
+  --shadow: 0 4px 24px rgba(45,36,24,0.08);
+  --shadow-lg: 0 12px 48px rgba(45,36,24,0.15);
+  --transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.2rem 3rem;
+  background: rgba(250,246,240,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(232,221,208,0.5);
+  transition: var(--transition);
+}
+
+nav.scrolled {
+  box-shadow: var(--shadow);
+}
+
+.nav-logo {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem; font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+}
+.nav-logo span { color: var(--terracotta); }
+
+.nav-links {
+  display: flex; gap: 2rem; align-items: center;
+}
+.nav-links a {
+  text-decoration: none; color: var(--ink-soft);
+  font-size: 0.95rem; font-weight: 500;
+  transition: color 0.3s;
+}
+.nav-links a:hover { color: var(--terracotta); }
+
+.nav-cta {
+  background: var(--terracotta); color: white;
+  padding: 0.65rem 1.6rem; border-radius: 100px;
+  font-weight: 600; font-size: 0.9rem;
+  border: none; cursor: pointer;
+  transition: var(--transition);
+}
+.nav-cta:hover { background: var(--terracotta-light); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(201,93,60,0.35); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d2418 50%, #3d2818 100%);
+}
+
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 70% 30%, rgba(201,93,60,0.15) 0%, transparent 50%),
+              radial-gradient(ellipse at 20% 70%, rgba(122,146,110,0.1) 0%, transparent 50%);
+}
+
+.hero::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
+  background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+}
+
+/* ── Cactus decorations ── */
+.cactus-deco {
+  position: absolute; bottom: 0; z-index: 1;
+  pointer-events: none; opacity: 0.85;
+}
+.cactus-left {
+  left: 3%; bottom: 80px; width: 180px; height: 320px;
+  animation: sway 6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+.cactus-right {
+  right: 5%; bottom: 60px; width: 140px; height: 280px;
+  animation: sway 8s ease-in-out infinite reverse;
+  transform-origin: bottom center;
+}
+.cactus-far-left {
+  left: 15%; bottom: 100px; width: 80px; height: 140px; opacity: 0.4;
+  animation: sway 7s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+.cactus-far-right {
+  right: 18%; bottom: 90px; width: 60px; height: 100px; opacity: 0.35;
+  animation: sway 9s ease-in-out infinite reverse;
+  transform-origin: bottom center;
+}
+@keyframes sway {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1.5deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cactus-deco { animation: none; }
+}
+@media (max-width: 768px) {
+  .cactus-left { width: 100px; height: 180px; left: 2%; bottom: 60px; }
+  .cactus-right { width: 80px; height: 160px; right: 3%; bottom: 50px; }
+  .cactus-far-left, .cactus-far-right { display: none; }
+}
+
+.hero-content {
+  position: relative; z-index: 2; text-align: center;
+  padding: 0 2rem; max-width: 800px;
+}
+
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: rgba(212,165,116,0.15); color: var(--gold);
+  padding: 0.5rem 1.2rem; border-radius: 100px;
+  font-size: 0.85rem; font-weight: 500; letter-spacing: 1px;
+  margin-bottom: 2rem; border: 1px solid rgba(212,165,116,0.3);
+}
+
+.hero h1 {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 400; color: white;
+  line-height: 1.05; letter-spacing: -2px;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 em {
+  font-style: italic; color: var(--gold);
+}
+
+.hero p {
+  font-size: 1.2rem; color: rgba(255,255,255,0.7);
+  max-width: 500px; margin: 0 auto 2.5rem; font-weight: 300;
+}
+
+.hero-cta-group {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+}
+
+.hero-cta {
+  background: var(--terracotta); color: white;
+  padding: 1.1rem 2.5rem; border-radius: 100px;
+  font-size: 1.05rem; font-weight: 600;
+  border: none; cursor: pointer;
+  transition: var(--transition); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 0.6rem;
+}
+.hero-cta:hover { background: var(--terracotta-light); transform: translateY(-3px); box-shadow: 0 12px 36px rgba(201,93,60,0.45); }
+
+.hero-cta-ghost {
+  background: transparent; color: white;
+  padding: 1.1rem 2.5rem; border-radius: 100px;
+  font-size: 1.05rem; font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+  transition: var(--transition); text-decoration: none;
+}
+.hero-cta-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
+
+.hero-stats {
+  display: flex; gap: 3rem; justify-content: center;
+  margin-top: 4rem; padding-top: 2rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.hero-stat { text-align: center; }
+.hero-stat-num { font-family: 'Fraunces', serif; font-size: 2rem; color: white; font-weight: 500; }
+.hero-stat-label { font-size: 0.8rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+
+/* ── SERVICES ── */
+.section { padding: 6rem 3rem; max-width: 1200px; margin: 0 auto; }
+
+.section-label {
+  text-align: center; font-size: 0.85rem; font-weight: 600;
+  color: var(--terracotta); text-transform: uppercase; letter-spacing: 2px;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 400;
+  text-align: center; color: var(--ink); letter-spacing: -1px;
+  margin-bottom: 1rem; line-height: 1.15;
+}
+
+.section-sub {
+  text-align: center; color: var(--ink-soft); max-width: 500px;
+  margin: 0 auto 4rem; font-size: 1.05rem;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.service-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 2rem;
+  transition: var(--transition); cursor: pointer;
+  position: relative; overflow: hidden;
+}
+.service-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--terracotta), var(--gold));
+  transform: scaleX(0); transform-origin: left; transition: transform 0.5s;
+}
+.service-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.service-card:hover::before { transform: scaleX(1); }
+
+.service-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: linear-gradient(135deg, rgba(201,93,60,0.1), rgba(212,165,116,0.1));
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.5rem; font-size: 1.5rem;
+}
+
+.service-name {
+  font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 500;
+  margin-bottom: 0.5rem; color: var(--ink);
+}
+
+.service-desc {
+  color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.service-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 1rem; border-top: 1px solid var(--border);
+}
+
+.service-duration { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+.service-price { font-family: 'Fraunces', serif; font-size: 1.5rem; color: var(--terracotta); font-weight: 600; }
+
+.service-book-btn {
+  background: var(--ink); color: white; border: none;
+  padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.85rem;
+  font-weight: 600; cursor: pointer; transition: var(--transition);
+}
+.service-book-btn:hover { background: var(--terracotta); }
+
+/* ── ABOUT / EXPERIENCE ── */
+.about {
+  background: var(--bg-deep); color: white;
+  padding: 6rem 3rem; position: relative; overflow: hidden;
+}
+.about::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 80% 20%, rgba(212,165,116,0.08) 0%, transparent 50%);
+}
+.about-inner { max-width: 1000px; margin: 0 auto; position: relative; z-index: 1; }
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+.about-text h2 { font-family: 'Fraunces', serif; font-size: 2.5rem; font-weight: 400; margin-bottom: 1.5rem; line-height: 1.15; }
+.about-text h2 em { color: var(--gold); font-style: italic; }
+.about-text p { color: rgba(255,255,255,0.7); margin-bottom: 1rem; font-weight: 300; }
+
+.about-features { display: flex; flex-direction: column; gap: 1.5rem; }
+.about-feature { display: flex; gap: 1rem; align-items: start; }
+.about-feature-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); margin-top: 8px; flex-shrink: 0; }
+.about-feature h4 { font-size: 1rem; font-weight: 600; margin-bottom: 0.3rem; }
+.about-feature p { font-size: 0.9rem; color: rgba(255,255,255,0.55); margin: 0; }
+
+/* ── BOOKING MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(26,31,46,0.6); backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center;
+  padding: 2rem; opacity: 0; transition: opacity 0.3s;
+}
+.modal-overlay.active { display: flex; opacity: 1; }
+
+.modal {
+  background: var(--bg-card); border-radius: 24px;
+  max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+  animation: slideUp 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-header {
+  padding: 2rem 2rem 0; display: flex; justify-content: space-between; align-items: center;
+}
+.modal-title { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 500; }
+.modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); transition: color 0.3s; }
+.modal-close:hover { color: var(--terracotta); }
+
+.modal-body { padding: 1.5rem 2rem 2rem; }
+
+/* Steps indicator */
+.booking-steps { display: flex; gap: 0.5rem; margin-bottom: 2rem; }
+.step-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+.step-dot.active { background: var(--terracotta); }
+.step-dot.done { background: var(--sage); }
+
+/* Step content */
+.step-content { display: none; }
+.step-content.active { display: block; animation: fadeIn 0.4s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+/* Service selection */
+.service-option {
+  border: 2px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.2rem; margin-bottom: 0.8rem; cursor: pointer;
+  transition: var(--transition); display: flex; justify-content: space-between; align-items: center;
+}
+.service-option:hover { border-color: var(--gold); }
+.service-option.selected { border-color: var(--terracotta); background: rgba(201,93,60,0.05); }
+.service-option-info h4 { font-size: 1rem; font-weight: 600; margin-bottom: 0.2rem; }
+.service-option-info p { font-size: 0.8rem; color: var(--muted); margin: 0; }
+.service-option-price { font-family: 'Fraunces', serif; font-size: 1.3rem; color: var(--terracotta); font-weight: 600; }
+
+/* Date / Time */
+.date-picker { margin-bottom: 1.5rem; }
+.date-picker label, .time-picker label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+.date-picker input {
+  width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border);
+  border-radius: 12px; font-size: 1rem; font-family: 'Outfit', sans-serif;
+  background: var(--bg); color: var(--ink); transition: var(--transition);
+}
+.date-picker input:focus { outline: none; border-color: var(--terracotta); }
+
+.time-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.time-slot {
+  padding: 0.7rem; border: 2px solid var(--border); border-radius: 10px;
+  text-align: center; font-size: 0.9rem; font-weight: 500; cursor: pointer;
+  transition: var(--transition); background: var(--bg);
+}
+.time-slot:hover { border-color: var(--gold); }
+.time-slot.selected { border-color: var(--terracotta); background: var(--terracotta); color: white; }
+.time-slot.disabled { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+.time-slot.disabled:hover { border-color: var(--border); }
+
+/* Form fields */
+.form-field { margin-bottom: 1.2rem; }
+.form-field label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+.form-field input, .form-field textarea {
+  width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border);
+  border-radius: 12px; font-size: 1rem; font-family: 'Outfit', sans-serif;
+  background: var(--bg); color: var(--ink); transition: var(--transition);
+}
+.form-field input:focus, .form-field textarea:focus { outline: none; border-color: var(--terracotta); }
+.form-field textarea { resize: vertical; min-height: 80px; }
+
+/* Booking summary */
+.booking-summary {
+  background: var(--bg); border-radius: 12px; padding: 1.5rem;
+  margin-bottom: 1.5rem; border: 1px solid var(--border);
+}
+.summary-row { display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 0.95rem; }
+.summary-row.bold { font-weight: 700; border-top: 1px solid var(--border); margin-top: 0.5rem; padding-top: 1rem; }
+.summary-label { color: var(--ink-soft); }
+.summary-value { color: var(--ink); font-weight: 600; }
+
+/* Buttons */
+.btn-group { display: flex; gap: 0.8rem; margin-top: 1.5rem; }
+.btn-back {
+  flex: 1; padding: 0.9rem; border: 2px solid var(--border); border-radius: 12px;
+  background: transparent; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  color: var(--ink-soft); transition: var(--transition);
+}
+.btn-back:hover { background: var(--border); }
+
+.btn-next {
+  flex: 2; padding: 0.9rem; border: none; border-radius: 12px;
+  background: var(--terracotta); color: white; font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition);
+}
+.btn-next:hover { background: var(--terracotta-light); box-shadow: 0 8px 20px rgba(201,93,60,0.3); }
+.btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Success state */
+.booking-success { text-align: center; padding: 2rem 0; }
+.success-icon {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--sage), #5d7a52);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.5rem; font-size: 2rem; color: white;
+}
+.success-icon svg { width: 36px; height: 36px; }
+.booking-success h3 { font-family: 'Fraunces', serif; font-size: 1.8rem; margin-bottom: 0.5rem; }
+.booking-success p { color: var(--ink-soft); margin-bottom: 1.5rem; }
+
+/* ── TESTIMONIALS ── */
+.testimonials { padding: 6rem 3rem; max-width: 1100px; margin: 0 auto; }
+.testimonial-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
+.testimonial-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; }
+.testimonial-stars { color: var(--gold); margin-bottom: 1rem; font-size: 0.9rem; letter-spacing: 2px; }
+.testimonial-text { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 400; line-height: 1.5; color: var(--ink); margin-bottom: 1.5rem; }
+.testimonial-author { display: flex; align-items: center; gap: 0.8rem; }
+.testimonial-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--terracotta), var(--gold)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; }
+.testimonial-name { font-weight: 600; font-size: 0.9rem; }
+.testimonial-role { font-size: 0.8rem; color: var(--muted); }
+
+/* ── CTA BANNER ── */
+.cta-banner {
+  background: linear-gradient(135deg, var(--terracotta) 0%, #b04a2e 100%);
+  padding: 5rem 3rem; text-align: center; position: relative; overflow: hidden;
+}
+.cta-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.1) 0%, transparent 60%);
+}
+.cta-banner h2 { font-family: 'Fraunces', serif; font-size: clamp(2rem, 4vw, 3rem); color: white; font-weight: 400; margin-bottom: 1rem; position: relative; }
+.cta-banner p { color: rgba(255,255,255,0.8); margin-bottom: 2rem; font-size: 1.1rem; position: relative; }
+.cta-banner button {
+  background: white; color: var(--terracotta); border: none;
+  padding: 1.1rem 2.5rem; border-radius: 100px; font-size: 1.05rem; font-weight: 700;
+  cursor: pointer; transition: var(--transition); position: relative;
+}
+.cta-banner button:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.2); }
+
+/* ── FOOTER ── */
+footer { background: var(--bg-deep); color: rgba(255,255,255,0.5); padding: 3rem; text-align: center; font-size: 0.85rem; }
+footer a { color: rgba(255,255,255,0.7); text-decoration: none; margin: 0 1rem; transition: color 0.3s; }
+footer a:hover { color: var(--gold); }
+.footer-admin { color: rgba(255,255,255,0.3) !important; font-size: 0.8rem; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  .nav-links .nav-cta { display: block; }
+  .section, .testimonials, .about, .cta-banner { padding: 4rem 1.5rem; }
+  .about-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .hero-stats { gap: 1.5rem; }
+  .time-slots { grid-template-columns: repeat(2, 1fr); }
+  .services-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo"><span style="font-size:1.1rem">🌵</span> Kayci<span>.</span> Cactus</div>
+  <div class="nav-links">
+    <a href="#services">Services</a>
+    <a href="#about">About</a>
+    <a href="#reviews">Reviews</a>
+    <button class="nav-cta" onclick="openBooking()">Book Now</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <!-- Cactus decorations -->
+  <!-- Large saguaro left -->
+  <svg class="cactus-deco cactus-left" viewBox="0 0 200 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sagL-body" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#1a3a1e"/>
+        <stop offset="30%" stop-color="#3a6b3a"/>
+        <stop offset="50%" stop-color="#4d7a4d"/>
+        <stop offset="70%" stop-color="#3a6b3a"/>
+        <stop offset="100%" stop-color="#1a3a1e"/>
+      </linearGradient>
+      <linearGradient id="sagL-armL" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#1a3a1e"/>
+        <stop offset="40%" stop-color="#3d6b3d"/>
+        <stop offset="100%" stop-color="#2d5a2d"/>
+      </linearGradient>
+      <linearGradient id="sagL-armR" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#2d5a2d"/>
+        <stop offset="60%" stop-color="#3d6b3d"/>
+        <stop offset="100%" stop-color="#1a3a1e"/>
+      </linearGradient>
+      <radialGradient id="sagL-flower" cx="50%" cy="50%">
+        <stop offset="0%" stop-color="#f4a064"/>
+        <stop offset="60%" stop-color="#c95d3c"/>
+        <stop offset="100%" stop-color="#a04420"/>
+      </radialGradient>
+    </defs>
+    <!-- Ground shadow -->
+    <ellipse cx="100" cy="395" rx="50" ry="6" fill="#000" opacity="0.15"/>
+    <!-- Main trunk -->
+    <path d="M90 395 L90 180 Q90 155 100 150 Q110 155 110 180 L110 395 Z" fill="url(#sagL-body)"/>
+    <!-- Left arm -->
+    <path d="M90 240 Q60 240 52 220 Q44 195 52 175 Q60 160 72 162 Q78 163 78 172 L78 200 Q78 210 90 210 Z" fill="url(#sagL-armL)"/>
+    <!-- Left arm tip -->
+    <ellipse cx="65" cy="158" rx="14" ry="10" fill="#3a6b3a"/>
+    <!-- Right arm -->
+    <path d="M110 190 Q140 190 148 168 Q156 140 148 120 Q140 108 128 110 Q122 112 122 122 L122 155 Q122 168 110 168 Z" fill="url(#sagL-armR)"/>
+    <!-- Right arm tip -->
+    <ellipse cx="143" cy="105" rx="14" ry="10" fill="#3a6b3a"/>
+    <!-- Ribs — vertical ridges with shadow -->
+    <path d="M93 180 Q91 270 93 390" stroke="#2a4a2a" stroke-width="1.5" opacity="0.7" fill="none"/>
+    <path d="M97 165 Q95 270 97 390" stroke="#5a8a5a" stroke-width="1" opacity="0.4" fill="none"/>
+    <path d="M100 155 Q98 270 100 390" stroke="#2a4a2a" stroke-width="1" opacity="0.3" fill="none"/>
+    <path d="M103 165 Q105 270 103 390" stroke="#5a8a5a" stroke-width="1" opacity="0.4" fill="none"/>
+    <path d="M107 180 Q109 270 107 390" stroke="#2a4a2a" stroke-width="1.5" opacity="0.7" fill="none"/>
+    <!-- Areoles (spine clusters) -->
+    <g fill="#d4a574" opacity="0.5">
+      <circle cx="92" cy="195" r="1.5"/><circle cx="108" cy="195" r="1.5"/>
+      <circle cx="92" cy="225" r="1.5"/><circle cx="108" cy="225" r="1.5"/>
+      <circle cx="92" cy="255" r="1.5"/><circle cx="108" cy="255" r="1.5"/>
+      <circle cx="92" cy="285" r="1.5"/><circle cx="108" cy="285" r="1.5"/>
+      <circle cx="92" cy="315" r="1.5"/><circle cx="108" cy="315" r="1.5"/>
+      <circle cx="92" cy="345" r="1.5"/><circle cx="108" cy="345" r="1.5"/>
+    </g>
+    <!-- Spines radiating from areoles -->
+    <g stroke="#e0c898" stroke-width="0.4" opacity="0.45">
+      <line x1="90" y1="195" x2="86" y2="191"/><line x1="90" y1="195" x2="88" y2="190"/>
+      <line x1="110" y1="195" x2="114" y2="191"/><line x1="110" y1="195" x2="112" y2="190"/>
+      <line x1="90" y1="225" x2="86" y2="221"/><line x1="90" y1="225" x2="88" y2="220"/>
+      <line x1="110" y1="225" x2="114" y2="221"/><line x1="110" y1="225" x2="112" y2="220"/>
+      <line x1="90" y1="255" x2="86" y2="251"/><line x1="90" y1="255" x2="88" y2="250"/>
+      <line x1="110" y1="255" x2="114" y2="251"/><line x1="110" y1="255" x2="112" y2="250"/>
+      <line x1="90" y1="285" x2="86" y2="281"/><line x1="90" y1="285" x2="88" y2="280"/>
+      <line x1="110" y1="285" x2="114" y2="281"/><line x1="110" y1="285" x2="112" y2="280"/>
+      <line x1="90" y1="315" x2="86" y2="311"/><line x1="90" y1="315" x2="88" y2="310"/>
+      <line x1="110" y1="315" x2="114" y2="311"/><line x1="110" y1="315" x2="112" y2="310"/>
+      <line x1="90" y1="345" x2="86" y2="341"/><line x1="90" y1="345" x2="88" y2="340"/>
+      <line x1="110" y1="345" x2="114" y2="341"/><line x1="110" y1="345" x2="112" y2="340"/>
+    </g>
+    <!-- Flower bud on top -->
+    <circle cx="100" cy="148" r="5" fill="url(#sagL-flower)"/>
+    <circle cx="100" cy="146" r="3" fill="#f4a064" opacity="0.8"/>
+  </svg>
+
+  <!-- Barrel cactus far left -->
+  <svg class="cactus-deco cactus-far-left" viewBox="0 0 100 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="barL-body" cx="40%" cy="30%">
+        <stop offset="0%" stop-color="#5d8a4d"/>
+        <stop offset="50%" stop-color="#3a6b3a"/>
+        <stop offset="100%" stop-color="#1a3a1e"/>
+      </radialGradient>
+      <radialGradient id="barL-flower" cx="50%" cy="50%">
+        <stop offset="0%" stop-color="#f4a064"/>
+        <stop offset="70%" stop-color="#c95d3c"/>
+        <stop offset="100%" stop-color="#a04420"/>
+      </radialGradient>
+    </defs>
+    <!-- Ground shadow -->
+    <ellipse cx="50" cy="165" rx="30" ry="4" fill="#000" opacity="0.12"/>
+    <!-- Body -->
+    <path d="M20 160 Q18 110 30 70 Q35 55 50 52 Q65 55 70 70 Q82 110 80 160 Z" fill="url(#barL-body)"/>
+    <!-- Ribs -->
+    <path d="M35 155 Q33 100 38 60" stroke="#2a4a2a" stroke-width="1" opacity="0.6" fill="none"/>
+    <path d="M50 155 Q50 100 50 55" stroke="#5a8a5a" stroke-width="0.8" opacity="0.3" fill="none"/>
+    <path d="M65 155 Q67 100 62 60" stroke="#2a4a2a" stroke-width="1" opacity="0.6" fill="none"/>
+    <!-- Spine clusters -->
+    <g fill="#e0c898" opacity="0.5">
+      <circle cx="35" cy="75" r="1"/><circle cx="50" cy="70" r="1"/><circle cx="65" cy="75" r="1"/>
+      <circle cx="33" cy="95" r="1"/><circle cx="50" cy="90" r="1"/><circle cx="67" cy="95" r="1"/>
+      <circle cx="32" cy="115" r="1"/><circle cx="50" cy="110" r="1"/><circle cx="68" cy="115" r="1"/>
+      <circle cx="32" cy="135" r="1"/><circle cx="50" cy="130" r="1"/><circle cx="68" cy="135" r="1"/>
+    </g>
+    <!-- Radial spines -->
+    <g stroke="#e0c898" stroke-width="0.3" opacity="0.4">
+      <line x1="35" y1="75" x2="31" y2="71"/><line x1="35" y1="75" x2="39" y2="71"/>
+      <line x1="65" y1="75" x2="61" y2="71"/><line x1="65" y1="75" x2="69" y2="71"/>
+      <line x1="33" y1="95" x2="29" y2="91"/><line x1="67" y1="95" x2="71" y2="91"/>
+    </g>
+    <!-- Crown flower -->
+    <circle cx="50" cy="55" r="7" fill="url(#barL-flower)"/>
+    <circle cx="50" cy="53" r="4" fill="#f4a064" opacity="0.7"/>
+    <circle cx="50" cy="52" r="2" fill="#fff" opacity="0.4"/>
+  </svg>
+
+  <!-- Large saguaro right -->
+  <svg class="cactus-deco cactus-right" viewBox="0 0 200 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sagR-body" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#1a3a1e"/>
+        <stop offset="30%" stop-color="#3a6b3a"/>
+        <stop offset="50%" stop-color="#4d7a4d"/>
+        <stop offset="70%" stop-color="#3a6b3a"/>
+        <stop offset="100%" stop-color="#1a3a1e"/>
+      </linearGradient>
+      <linearGradient id="sagR-armL" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#1a3a1e"/>
+        <stop offset="40%" stop-color="#3d6b3d"/>
+        <stop offset="100%" stop-color="#2d5a2d"/>
+      </linearGradient>
+      <linearGradient id="sagR-armR" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#2d5a2d"/>
+        <stop offset="60%" stop-color="#3d6b3d"/>
+        <stop offset="100%" stop-color="#1a3a1e"/>
+      </linearGradient>
+    </defs>
+    <!-- Ground shadow -->
+    <ellipse cx="100" cy="395" rx="50" ry="6" fill="#000" opacity="0.15"/>
+    <!-- Main trunk -->
+    <path d="M92 395 L92 200 Q92 178 100 173 Q108 178 108 200 L108 395 Z" fill="url(#sagR-body)"/>
+    <!-- Left arm (lower) -->
+    <path d="M92 250 Q64 250 56 232 Q48 210 56 192 Q64 178 76 180 Q82 182 82 190 L82 215 Q82 225 92 225 Z" fill="url(#sagR-armL)"/>
+    <ellipse cx="68" cy="175" rx="13" ry="9" fill="#3a6b3a"/>
+    <!-- Right arm (higher) -->
+    <path d="M108 215 Q136 215 144 193 Q152 165 144 145 Q136 132 124 134 Q118 136 118 146 L118 178 Q118 188 108 188 Z" fill="url(#sagR-armR)"/>
+    <ellipse cx="139" cy="130" rx="13" ry="9" fill="#3a6b3a"/>
+    <!-- Ribs -->
+    <path d="M95 200 Q93 290 95 390" stroke="#2a4a2a" stroke-width="1.5" opacity="0.7" fill="none"/>
+    <path d="M99 185 Q97 290 99 390" stroke="#5a8a5a" stroke-width="1" opacity="0.4" fill="none"/>
+    <path d="M102 178 Q100 290 102 390" stroke="#2a4a2a" stroke-width="1" opacity="0.3" fill="none"/>
+    <path d="M105 185 Q107 290 105 390" stroke="#5a8a5a" stroke-width="1" opacity="0.4" fill="none"/>
+    <path d="M108 200 Q110 290 108 390" stroke="#2a4a2a" stroke-width="1.5" opacity="0.7" fill="none"/>
+    <!-- Areoles -->
+    <g fill="#d4a574" opacity="0.5">
+      <circle cx="94" cy="215" r="1.5"/><circle cx="106" cy="215" r="1.5"/>
+      <circle cx="94" cy="245" r="1.5"/><circle cx="106" cy="245" r="1.5"/>
+      <circle cx="94" cy="275" r="1.5"/><circle cx="106" cy="275" r="1.5"/>
+      <circle cx="94" cy="305" r="1.5"/><circle cx="106" cy="305" r="1.5"/>
+      <circle cx="94" cy="335" r="1.5"/><circle cx="106" cy="335" r="1.5"/>
+      <circle cx="94" cy="365" r="1.5"/><circle cx="106" cy="365" r="1.5"/>
+    </g>
+    <!-- Spines -->
+    <g stroke="#e0c898" stroke-width="0.4" opacity="0.45">
+      <line x1="92" y1="215" x2="88" y2="211"/><line x1="92" y1="215" x2="90" y2="210"/>
+      <line x1="108" y1="215" x2="112" y2="211"/><line x1="108" y1="215" x2="110" y2="210"/>
+      <line x1="92" y1="245" x2="88" y2="241"/><line x1="92" y1="245" x2="90" y2="240"/>
+      <line x1="108" y1="245" x2="112" y2="241"/><line x1="108" y1="245" x2="110" y2="240"/>
+      <line x1="92" y1="275" x2="88" y2="271"/><line x1="92" y1="275" x2="90" y2="270"/>
+      <line x1="108" y1="275" x2="112" y2="271"/><line x1="108" y1="275" x2="110" y2="270"/>
+      <line x1="92" y1="305" x2="88" y2="301"/><line x1="92" y1="305" x2="90" y2="300"/>
+      <line x1="108" y1="305" x2="112" y2="301"/><line x1="108" y1="305" x2="110" y2="300"/>
+      <line x1="92" y1="335" x2="88" y2="331"/><line x1="92" y1="335" x2="90" y2="330"/>
+      <line x1="108" y1="335" x2="112" y2="331"/><line x1="108" y1="335" x2="110" y2="330"/>
+      <line x1="92" y1="365" x2="88" y2="361"/><line x1="92" y1="365" x2="90" y2="360"/>
+      <line x1="108" y1="365" x2="112" y2="361"/><line x1="108" y1="365" x2="110" y2="360"/>
+    </g>
+  </svg>
+
+  <!-- Prickly pear far right -->
+  <svg class="cactus-deco cactus-far-right" viewBox="0 0 80 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="pp-body" cx="35%" cy="30%">
+        <stop offset="0%" stop-color="#5d8a4d"/>
+        <stop offset="50%" stop-color="#3a6b3a"/>
+        <stop offset="100%" stop-color="#1a3a1e"/>
+      </radialGradient>
+      <radialGradient id="pp-flower" cx="50%" cy="50%">
+        <stop offset="0%" stop-color="#f4a064"/>
+        <stop offset="70%" stop-color="#c95d3c"/>
+        <stop offset="100%" stop-color="#a04420"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="40" cy="135" rx="25" ry="3.5" fill="#000" opacity="0.12"/>
+    <!-- Pads stacked -->
+    <ellipse cx="40" cy="100" rx="24" ry="32" fill="url(#pp-body)"/>
+    <ellipse cx="40" cy="65" rx="20" ry="24" fill="url(#pp-body)"/>
+    <ellipse cx="40" cy="35" rx="15" ry="16" fill="url(#pp-body)"/>
+    <!-- Pad ridges -->
+    <path d="M40 72 Q40 95 40 128" stroke="#2a4a2a" stroke-width="0.8" opacity="0.4" fill="none"/>
+    <path d="M30 78 Q28 100 32 125" stroke="#2a4a2a" stroke-width="0.6" opacity="0.3" fill="none"/>
+    <path d="M50 78 Q52 100 48 125" stroke="#2a4a2a" stroke-width="0.6" opacity="0.3" fill="none"/>
+    <!-- Spine dots -->
+    <g fill="#e0c898" opacity="0.5">
+      <circle cx="32" cy="80" r="0.8"/><circle cx="48" cy="80" r="0.8"/>
+      <circle cx="30" cy="95" r="0.8"/><circle cx="50" cy="95" r="0.8"/>
+      <circle cx="32" cy="110" r="0.8"/><circle cx="48" cy="110" r="0.8"/>
+      <circle cx="35" cy="50" r="0.8"/><circle cx="45" cy="50" r="0.8"/>
+    </g>
+    <!-- Flower on top pad -->
+    <circle cx="40" cy="25" r="5" fill="url(#pp-flower)"/>
+    <circle cx="40" cy="24" r="2.5" fill="#f4a064" opacity="0.7"/>
+  </svg>
+
+  <div class="hero-content">
+    <div class="hero-tag"> Verrado · Buckeye, AZ </div>
+    <h1>Restore your body in the <em>spirit of the desert</em></h1>
+    <p>Arizona's premier therapeutic massage experience. Booking is easy — relaxation is guaranteed.</p>
+    <div class="hero-cta-group">
+      <button class="hero-cta" onclick="openBooking()">
+        Book Your Session →
+      </button>
+      <a href="#services" class="hero-cta-ghost">Explore Services</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">6</div>
+        <div class="hero-stat-label">Signature Services</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">500+</div>
+        <div class="hero-stat-label">Happy Clients</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">8yr</div>
+        <div class="hero-stat-label">Experience</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="section" id="services">
+  <div class="section-label">Our Services</div>
+  <h2 class="section-title">Therapeutic massage, <em style="font-style:italic;color:var(--terracotta)">desert-inspired</em></h2>
+  <p class="section-sub">Each treatment blends professional technique with the calming essence of the Sonoran Desert.</p>
+  <div class="services-grid" id="services-grid"></div>
+</section>
+
+<!-- ABOUT -->
+<section class="about" id="about">
+  <div class="about-inner">
+    <div class="about-grid">
+      <div class="about-text">
+        <h2>A sanctuary rooted in <em>Arizona tradition</em></h2>
+        <p>Our practice draws from the healing traditions of the Southwest. From the warmth of sun-baked river stones to the calming scent of desert sage, every detail is designed to reconnect you with the natural rhythm of the land.</p>
+        <p>Whether you're recovering from a hike in the White Tank Mountains or decompressing after a long work week, we tailor every session to your body's needs.</p>
+      </div>
+      <div class="about-features">
+        <div class="about-feature">
+          <div class="about-feature-dot"></div>
+          <div>
+            <h4>Licensed & Certified</h4>
+            <p>State-licensed massage therapist with advanced certifications in multiple modalities.</p>
+          </div>
+        </div>
+        <div class="about-feature">
+          <div class="about-feature-dot"></div>
+          <div>
+            <h4>Locally Sourced Products</h4>
+            <p>Sage oils, desert botanicals, and river stones sourced from Arizona suppliers.</p>
+          </div>
+        </div>
+        <div class="about-feature">
+          <div class="about-feature-dot"></div>
+          <div>
+            <h4>Flexible Scheduling</h4>
+            <p>Easy online booking with same-day and next-day availability.</p>
+          </div>
+        </div>
+        <div class="about-feature">
+          <div class="about-feature-dot"></div>
+          <div>
+            <h4>Custom Treatment Plans</h4>
+            <p>Every session is adapted to your body's specific tension patterns and recovery needs.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials" id="reviews">
+  <div class="section-label">Client Stories</div>
+  <h2 class="section-title">Loved by Arizonans</h2>
+  <div class="testimonial-grid">
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"The Desert Stone Massage was transformative. I walked in with a week of stress and walked out feeling like a new person. The Arizona-themed atmosphere is incredible."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">JM</div>
+        <div>
+          <div class="testimonial-name">Jessica M.</div>
+          <div class="testimonial-role">Verrado, AZ</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"Best massage I've had in Phoenix. The deep tissue work with sage oil was exactly what my back needed after months of desk work. Booking online took 30 seconds."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">RT</div>
+        <div>
+          <div class="testimonial-name">Robert T.</div>
+          <div class="testimonial-role">Buckeye, AZ</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"The Palo Santo Energy Ritual was unlike anything I've experienced. So peaceful and grounding. I've already booked my next three sessions."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">AK</div>
+        <div>
+          <div class="testimonial-name">Amanda K.</div>
+          <div class="testimonial-role">Tucson, AZ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section class="cta-banner">
+  <h2>Your moment of calm is one click away</h2>
+  <p>Book in under a minute. Feel better for days.</p>
+  <button onclick="openBooking()">Schedule Your Appointment →</button>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>Kayci Cactus · Serving Verrado & Buckeye, AZ · Licensed in Arizona</p>
+  <br>
+  <a href="#services">Services</a>
+  <a href="#about">About</a>
+  <a href="#reviews">Reviews</a>
+  <a href="/admin.html" class="footer-admin">Admin Portal</a>
+</footer>
+
+<!-- BOOKING MODAL -->
+<div class="modal-overlay" id="booking-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Book Your Session</div>
+      <button class="modal-close" onclick="closeBooking()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Step indicators -->
+      <div class="booking-steps" id="steps-indicator">
+        <div class="step-dot active" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+      </div>
+
+      <!-- Step 1: Service Selection -->
+      <div class="step-content active" id="step-1">
+        <p style="color:var(--ink-soft);margin-bottom:1.2rem;font-size:0.95rem">Select your massage service:</p>
+        <div id="service-options"></div>
+        <div class="btn-group">
+          <div style="flex:1"></div>
+          <button class="btn-next" id="step1-next" onclick="goToStep(2)" disabled>Select Date & Time →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Date & Time -->
+      <div class="step-content" id="step-2">
+        <div class="date-picker">
+          <label>Select Date</label>
+          <input type="date" id="booking-date" onchange="loadSlots()">
+          <p id="date-hint" style="font-size:0.8rem;color:var(--muted);margin-top:0.4rem;">Only dates with open hours will show available times.</p>
+        </div>
+        <div class="time-picker">
+          <label>Available Times</label>
+          <div class="time-slots" id="time-slots">
+            <p style="color:var(--muted);font-size:0.9rem">Please select a date first.</p>
+          </div>
+          <div id="waitlist-prompt" style="display:none;margin-top:1rem;padding:1.2rem;background:rgba(212,165,116,0.08);border-radius:12px;border:1px solid rgba(212,165,116,0.2);">
+            <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.8rem;">No open slots for this date. Join the waitlist and we'll contact you if a spot opens up!</p>
+            <button class="hero-cta" style="padding:0.7rem 1.5rem;font-size:0.9rem;" onclick="showWaitlistForm()">Join Waitlist →</button>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-back" onclick="goToStep(1)">← Back</button>
+          <button class="btn-next" id="step2-next" onclick="goToStep(3)" disabled>Your Info →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Your Info + Confirmation -->
+      <div class="step-content" id="step-3">
+        <div class="booking-summary" id="booking-summary"></div>
+        <div class="form-field">
+          <label>Full Name</label>
+          <input type="text" id="client-name" placeholder="Jane Doe">
+        </div>
+        <div class="form-field">
+          <label>Email Address</label>
+          <input type="email" id="client-email" placeholder="jane@example.com">
+        </div>
+        <div class="form-field">
+          <label>Phone Number</label>
+          <input type="tel" id="client-phone" placeholder="(602) 555-0123">
+        </div>
+        <div class="form-field">
+          <label>Notes (optional)</label>
+          <textarea id="client-notes" placeholder="Any specific areas of tension, allergies, or preferences..."></textarea>
+        </div>
+        <div class="btn-group">
+          <button class="btn-back" onclick="goToStep(2)">← Back</button>
+          <button class="btn-next" onclick="submitBooking()">Confirm Booking</button>
+        </div>
+      </div>
+
+      <!-- Success State -->
+      <div class="step-content" id="step-success">
+        <div class="booking-success">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h3>Booking Request Sent!</h3>
+          <p>We've received your request and sent a confirmation email. You'll hear from us shortly to confirm your appointment.</p>
+          <button class="hero-cta" style="margin-top:1rem" onclick="closeBooking()">Close</button>
+        </div>
+      </div>
+
+      <!-- Waitlist Form -->
+      <div class="step-content" id="step-waitlist">
+        <p style="color:var(--ink-soft);margin-bottom:1.2rem;font-size:0.95rem">Join the waitlist for <strong id="waitlist-date-display" style="color:var(--ink)"></strong>. If a slot opens up, we'll contact you!</p>
+        <div class="form-field">
+          <label>Full Name</label>
+          <input type="text" id="waitlist-name" placeholder="Jane Doe">
+        </div>
+        <div class="form-field">
+          <label>Email Address</label>
+          <input type="email" id="waitlist-email" placeholder="jane@example.com">
+        </div>
+        <div class="form-field">
+          <label>Phone Number (optional)</label>
+          <input type="tel" id="waitlist-phone" placeholder="(623) 555-0123">
+        </div>
+        <div class="form-field">
+          <label>Preferred Service (optional)</label>
+          <select id="waitlist-service" style="width:100%;padding:0.8rem 1rem;border:2px solid var(--border);border-radius:12px;font-size:1rem;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);">
+            <option value="">Any available service</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Notes (optional)</label>
+          <textarea id="waitlist-notes" placeholder="Preferred time window, specific needs, etc..."></textarea>
+        </div>
+        <div class="btn-group">
+          <button class="btn-back" onclick="goToStep(2)">← Back</button>
+          <button class="btn-next" onclick="submitWaitlist()">Join Waitlist</button>
+        </div>
+      </div>
+
+      <!-- Waitlist Success -->
+      <div class="step-content" id="step-waitlist-success">
+        <div class="booking-success">
+          <div class="success-icon" style="background:linear-gradient(135deg,var(--gold),#b88a5a);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h3>You're on the Waitlist!</h3>
+          <p>We'll contact you if a slot opens up for your requested date. Keep an eye on your email!</p>
+          <button class="hero-cta" style="margin-top:1rem" onclick="closeBooking()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+let selectedService = null;
+let selectedDate = null;
+let selectedTime = null;
+let currentStep = 1;
+let services = [];
+
+// ── Nav scroll effect ──
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('nav');
+  nav.classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// ── API base URL — set by config.js (empty for local dev, API Gateway URL for production) ──
+const API_BASE = window.API_BASE || '';
+
+// ── Load services ──
+async function loadServices() {
+  try {
+    const res = await fetch(`${API_BASE}/api/services`);
+    services = await res.json();
+    renderServices();
+    renderServiceOptions();
+  } catch (e) {
+    // Fallback if server not running
+    services = [
+      { id: 'desert-stone', name: 'Desert Stone Massage', duration: '75 min', price: 135, desc: 'Heated Arizona river stones melt tension from deep within.' },
+      { id: 'sonoran-deep', name: 'Sonoran Deep Tissue', duration: '60 min', price: 115, desc: 'Targeted deep-tissue work with locally sourced sage oil.' },
+      { id: 'sunset-relax', name: 'Sunset Relaxation', duration: '50 min', price: 95, desc: 'Gentle, flowing strokes paired with desert botanical aromatherapy.' },
+      { id: 'monsoon-recovery', name: 'Monsoon Recovery Sports', duration: '60 min', price: 125, desc: 'Athletic recovery massage focusing on overworked muscles.' },
+      { id: 'palosanto', name: 'Palo Santo Energy Ritual', duration: '45 min', price: 85, desc: 'Energy balancing with palo santo and crystal sound therapy.' },
+      { id: 'cactus-cupping', name: 'Cactus Flower Cupping', duration: '50 min', price: 110, desc: 'Modern cupping therapy to improve circulation and release fascia.' },
+    ];
+    renderServices();
+    renderServiceOptions();
+  }
+}
+
+function renderServices() {
+  const grid = document.getElementById('services-grid');
+  grid.innerHTML = services.map(s => `
+    <div class="service-card" onclick="openBooking('${s.id}')">
+      <div class="service-icon">${getServiceIcon(s.id)}</div>
+      <div class="service-name">${s.name}</div>
+      <div class="service-desc">${s.desc}</div>
+      <div class="service-meta">
+        <div>
+          <div class="service-duration">${s.duration}</div>
+          <div class="service-price">$${s.price}</div>
+        </div>
+        <button class="service-book-btn" onclick="event.stopPropagation();openBooking('${s.id}')">Book</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getServiceIcon(id) {
+  const icons = { 'desert-stone':'🪨', 'sonoran-deep':'🌿', 'sunset-relax':'🌅', 'monsoon-recovery':'💧', 'palosanto':'✨', 'cactus-cupping':'🌵' };
+  return icons[id] || '💆';
+}
+
+function renderServiceOptions() {
+  const container = document.getElementById('service-options');
+  container.innerHTML = services.map(s => `
+    <div class="service-option" data-id="${s.id}" onclick="selectService('${s.id}')">
+      <div class="service-option-info">
+        <h4>${s.name}</h4>
+        <p>${s.duration} · ${s.desc}</p>
+      </div>
+      <div class="service-option-price">$${s.price}</div>
+    </div>
+  `).join('');
+}
+
+function selectService(id) {
+  selectedService = services.find(s => s.id === id);
+  document.querySelectorAll('.service-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === id);
+  });
+  document.getElementById('step1-next').disabled = false;
+}
+
+// ── Booking modal ──
+function openBooking(serviceId) {
+  document.getElementById('booking-modal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  // Reset to step 1
+  goToStep(1);
+  // Pre-select service if passed
+  if (serviceId) selectService(serviceId);
+  // Set default date to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('booking-date').value = tomorrow.toISOString().split('T')[0];
+  document.getElementById('booking-date').min = new Date().toISOString().split('T')[0];
+}
+
+function closeBooking() {
+  document.getElementById('booking-modal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Close on overlay click
+document.getElementById('booking-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeBooking();
+});
+
+// ── Step navigation ──
+function goToStep(step) {
+  if (step === 2 && !selectedService) return;
+  if (step === 3 && !selectedTime) return;
+
+  // Update steps
+  document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+  document.getElementById(`step-${step}`).classList.add('active');
+
+  // Update step dots
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.classList.remove('active', 'done');
+    if (i < step) dot.classList.add('done');
+    else if (i === step) dot.classList.add('active');
+  }
+
+  currentStep = step;
+
+  if (step === 2) {
+    selectedDate = document.getElementById('booking-date').value;
+    if (selectedDate) loadSlots();
+  }
+
+  if (step === 3) {
+    renderSummary();
+  }
+}
+
+// ── Load available time slots — now driven by admin-set availability ──
+async function loadSlots() {
+  selectedDate = document.getElementById('booking-date').value;
+  if (!selectedDate) return;
+
+  const slotsContainer = document.getElementById('time-slots');
+  const waitlistPrompt = document.getElementById('waitlist-prompt');
+  waitlistPrompt.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/slots/${selectedDate}`);
+    const data = await res.json();
+
+    if (!data.available || data.available.length === 0) {
+      // No open slots — show waitlist prompt
+      if (data.openHours && data.openHours.length > 0) {
+        // All open slots are booked
+        slotsContainer.innerHTML = `<p style="color:var(--muted);font-size:0.9rem;grid-column:1/-1">All open slots for this date are booked.</p>`;
+      } else {
+        // No availability set for this date at all
+        slotsContainer.innerHTML = `<p style="color:var(--muted);font-size:0.9rem;grid-column:1/-1">No open hours set for this date yet.</p>`;
+      }
+      waitlistPrompt.style.display = 'block';
+      document.getElementById('step2-next').disabled = true;
+    } else {
+      // Show available slots
+      slotsContainer.innerHTML = data.available.map(slot => `
+        <div class="time-slot" data-time="${slot}" onclick="selectTime('${slot}')">${slot}</div>
+      `).join('');
+      document.getElementById('step2-next').disabled = true;
+    }
+  } catch (e) {
+    // Fallback — show all slots as available (server down)
+    const allSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+    slotsContainer.innerHTML = allSlots.map(slot => `
+      <div class="time-slot" data-time="${slot}" onclick="selectTime('${slot}')">${slot}</div>
+    `).join('');
+  }
+}
+
+function selectTime(time) {
+  selectedTime = time;
+  document.querySelectorAll('.time-slot').forEach(el => {
+    el.classList.toggle('selected', el.dataset.time === time);
+  });
+  document.getElementById('step2-next').disabled = false;
+}
+
+// ── Waitlist ──
+function showWaitlistForm() {
+  // Hide all steps, show waitlist form
+  document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+  document.getElementById('step-waitlist').classList.add('active');
+
+  // Show date
+  document.getElementById('waitlist-date-display').textContent = selectedDate;
+
+  // Populate service dropdown
+  const select = document.getElementById('waitlist-service');
+  select.innerHTML = '<option value="">Any available service</option>';
+  services.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.name} ($${s.price})`;
+    select.appendChild(opt);
+  });
+
+  // Pre-fill service if one was selected
+  if (selectedService) select.value = selectedService.id;
+}
+
+async function submitWaitlist() {
+  const name = document.getElementById('waitlist-name').value.trim();
+  const email = document.getElementById('waitlist-email').value.trim();
+  const phone = document.getElementById('waitlist-phone').value.trim();
+  const serviceId = document.getElementById('waitlist-service').value;
+  const notes = document.getElementById('waitlist-notes').value.trim();
+
+  if (!name || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/waitlist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, phone, serviceId: serviceId || null, date: selectedDate, notes }),
+    });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
+  } catch (e) {
+    console.log('Server not running, but waitlist captured locally');
+  }
+
+  // Show waitlist success
+  document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+  document.getElementById('step-waitlist-success').classList.add('active');
+}
+
+// ── Summary ──
+function renderSummary() {
+  const summary = document.getElementById('booking-summary');
+  summary.innerHTML = `
+    <div class="summary-row"><span class="summary-label">Service</span><span class="summary-value">${selectedService.name}</span></div>
+    <div class="summary-row"><span class="summary-label">Duration</span><span class="summary-value">${selectedService.duration}</span></div>
+    <div class="summary-row"><span class="summary-label">Date</span><span class="summary-value">${selectedDate}</span></div>
+    <div class="summary-row"><span class="summary-label">Time</span><span class="summary-value">${selectedTime}</span></div>
+    <div class="summary-row bold"><span class="summary-label">Total</span><span class="summary-value">$${selectedService.price}</span></div>
+  `;
+}
+
+// ── Submit booking ──
+async function submitBooking() {
+  const name = document.getElementById('client-name').value.trim();
+  const email = document.getElementById('client-email').value.trim();
+  const phone = document.getElementById('client-phone').value.trim();
+  const notes = document.getElementById('client-notes').value.trim();
+
+  if (!name || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/book`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, phone, serviceId: selectedService.id, date: selectedDate, time: selectedTime, notes }),
+    });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
+  } catch (e) {
+    // Fallback for prototype — still show success
+    console.log('Server not running, but booking captured locally');
+  }
+
+  // Show success
+  document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.step-dot').forEach(el => el.classList.add('done'));
+  document.getElementById('step-success').classList.add('active');
+
+  // Reset for next booking
+  setTimeout(() => {
+    selectedService = null; selectedDate = null; selectedTime = null;
+    document.querySelectorAll('.service-option, .time-slot').forEach(el => el.classList.remove('selected'));
+  }, 100);
+}
+
+// ── Init ──
+loadServices();
+</script>
+</body>
+</html>

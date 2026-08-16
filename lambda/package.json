@@ -1,0 +1,11 @@
+{
+  "name": "kayci-cactus-lambda",
+  "version": "1.0.0",
+  "description": "Lambda handler for Kayci Cactus massage booking API",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.400.0",
+    "@aws-sdk/lib-dynamodb": "^3.400.0",
+    "nodemailer": "^6.9.7"
+  }
+}

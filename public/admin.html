@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Portal — Kayci Cactus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f2ec; --bg-card: #fffdf9; --ink: #2d2418; --ink-soft: #6b5d4f;
+  --muted: #a0927f; --border: #e8ddd0; --terracotta: #c95d3c; --terracotta-light: #e07856;
+  --sage: #7a926e; --gold: #d4a574; --navy: #1a1f2e; --danger: #d4594a;
+  --warning: #d4a017; --success: #5d8a52; --radius: 14px;
+  --shadow: 0 4px 20px rgba(45,36,24,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+
+/* Login */
+.login-screen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--navy) 0%, #2d2418 50%, #3d2818 100%);
+  position: relative; overflow: hidden;
+}
+.login-screen::before { content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 70% 30%, rgba(201,93,60,0.12) 0%, transparent 50%); }
+.login-card { background: var(--bg-card); border-radius: 20px; padding: 3rem;
+  max-width: 420px; width: 90%; position: relative; z-index: 1; box-shadow: 0 24px 80px rgba(0,0,0,0.3); }
+.login-logo { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 600; margin-bottom: 0.5rem; }
+.login-logo span { color: var(--terracotta); }
+.login-sub { color: var(--ink-soft); font-size: 0.9rem; margin-bottom: 2rem; }
+.login-field { margin-bottom: 1.2rem; }
+.login-field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+.login-field input { width: 100%; padding: 0.9rem 1rem; border: 2px solid var(--border);
+  border-radius: 12px; font-size: 1rem; font-family: 'Outfit', sans-serif; background: var(--bg); transition: 0.3s; }
+.login-field input:focus { outline: none; border-color: var(--terracotta); }
+.login-btn { width: 100%; padding: 1rem; border: none; border-radius: 12px;
+  background: var(--terracotta); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.login-btn:hover { background: var(--terracotta-light); box-shadow: 0 8px 20px rgba(201,93,60,0.3); }
+.login-error { color: var(--danger); font-size: 0.85rem; margin-top: 1rem; display: none; }
+.login-hint { font-size: 0.8rem; color: var(--muted); margin-top: 1.5rem; text-align: center; }
+
+/* Dashboard */
+.dashboard { display: none; }
+.dashboard.active { display: block; }
+.dash-header { background: var(--navy); color: white; padding: 1.2rem 2.5rem;
+  display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+.dash-header h1 { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 500; }
+.dash-header h1 span { color: var(--gold); }
+.dash-logout { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: 0.3s; }
+.dash-logout:hover { background: rgba(255,255,255,0.2); }
+.dash-body { padding: 2.5rem; max-width: 1100px; margin: 0 auto; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+.tab-btn { padding: 0.8rem 1.5rem; border: none; background: transparent; font-size: 0.95rem; font-weight: 600;
+  color: var(--ink-soft); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: 0.3s; position: relative; }
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active { color: var(--terracotta); border-bottom-color: var(--terracotta); }
+.tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px;
+  border-radius: 10px; font-size: 0.7rem; font-weight: 700; padding: 0 6px; margin-left: 0.4rem; vertical-align: top; }
+.tab-badge.pending { background: rgba(212,160,23,0.2); color: var(--warning); }
+.tab-badge.waiting { background: rgba(212,165,116,0.2); color: var(--gold); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Stats */
+.dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+.stat-num { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 600; }
+.stat-num.pending { color: var(--warning); }
+.stat-num.confirmed { color: var(--success); }
+.stat-num.total { color: var(--terracotta); }
+.stat-num.today { color: var(--navy); }
+.stat-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 0.3rem; }
+
+/* Filters */
+.dash-filters { display: flex; gap: 0.6rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.filter-btn { padding: 0.5rem 1.2rem; border: 2px solid var(--border); border-radius: 100px;
+  background: var(--bg-card); font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: 0.3s; color: var(--ink-soft); }
+.filter-btn:hover { border-color: var(--gold); }
+.filter-btn.active { background: var(--terracotta); border-color: var(--terracotta); color: white; }
+
+/* Appointment cards */
+.appt-list { display: flex; flex-direction: column; gap: 0.8rem; }
+.appt-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1.5rem; display: flex; justify-content: space-between; align-items: start; transition: 0.3s; }
+.appt-card:hover { box-shadow: var(--shadow); }
+.appt-info { flex: 1; }
+.appt-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+.appt-name { font-weight: 700; font-size: 1.1rem; }
+.appt-service { color: var(--terracotta); font-weight: 600; font-size: 0.9rem; }
+.appt-badge { padding: 0.25rem 0.7rem; border-radius: 100px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.appt-badge.pending { background: rgba(212,160,23,0.15); color: var(--warning); }
+.appt-badge.confirmed { background: rgba(93,138,82,0.15); color: var(--success); }
+.appt-badge.cancelled { background: rgba(212,89,74,0.15); color: var(--danger); }
+.appt-badge.waiting { background: rgba(212,165,116,0.15); color: var(--gold); }
+.appt-badge.declined { background: rgba(212,89,74,0.15); color: var(--danger); }
+.appt-details { font-size: 0.85rem; color: var(--ink-soft); display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.appt-detail-item { display: flex; align-items: center; gap: 0.4rem; }
+.appt-detail-item strong { color: var(--ink); font-weight: 600; }
+.appt-notes { font-size: 0.85rem; color: var(--muted); margin-top: 0.6rem; font-style: italic; }
+.appt-actions { display: flex; gap: 0.5rem; flex-shrink: 0; margin-left: 1rem; flex-wrap: wrap; }
+.btn-confirm { background: var(--success); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.btn-confirm:hover { filter: brightness(1.1); }
+.btn-cancel { background: var(--danger); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.btn-cancel:hover { filter: brightness(1.1); }
+
+/* Availability Manager */
+.avail-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; margin-bottom: 1.5rem; }
+.avail-section h3 { font-family: 'Fraunces', serif; font-size: 1.3rem; margin-bottom: 1rem; }
+.avail-date-row { display: flex; gap: 1rem; align-items: end; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.avail-date-row > div { display: flex; flex-direction: column; gap: 0.4rem; }
+.avail-date-row label { font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 1px; }
+.avail-date-row input { padding: 0.7rem 1rem; border: 2px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: 'Outfit', sans-serif; background: var(--bg); }
+.avail-date-row input:focus { outline: none; border-color: var(--terracotta); }
+.avail-save-btn { background: var(--terracotta); color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.avail-save-btn:hover { background: var(--terracotta-light); }
+.avail-clear-btn { background: transparent; color: var(--danger); border: 2px solid var(--danger); padding: 0.7rem 1.5rem; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.avail-clear-btn:hover { background: var(--danger); color: white; }
+
+.slot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin: 1rem 0; }
+.slot-toggle { padding: 0.7rem; border: 2px solid var(--border); border-radius: 10px; text-align: center;
+  font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: 0.3s; background: var(--bg); user-select: none; }
+.slot-toggle:hover { border-color: var(--gold); }
+.slot-toggle.selected { border-color: var(--sage); background: rgba(122,146,110,0.15); color: var(--sage); font-weight: 700; }
+
+.avail-existing { margin-top: 2rem; }
+.avail-existing h4 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--ink-soft); }
+.avail-date-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; }
+.avail-date-card-date { font-weight: 700; font-size: 1rem; }
+.avail-date-card-slots { font-size: 0.85rem; color: var(--ink-soft); }
+.avail-date-card-remove { background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; font-weight: 600; padding: 0.3rem 0.6rem; }
+.avail-date-card-remove:hover { text-decoration: underline; }
+
+/* Waitlist confirm modal */
+.confirm-modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(26,31,46,0.6);
+  backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; padding: 2rem; }
+.confirm-modal-overlay.active { display: flex; }
+.confirm-modal { background: var(--bg-card); border-radius: 20px; max-width: 480px; width: 100%; padding: 2rem; box-shadow: 0 24px 80px rgba(0,0,0,0.3); }
+.confirm-modal h3 { font-family: 'Fraunces', serif; font-size: 1.4rem; margin-bottom: 0.5rem; }
+.confirm-modal p { color: var(--ink-soft); margin-bottom: 1.5rem; }
+.confirm-modal label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+.confirm-modal select { width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem; font-family: 'Outfit', sans-serif; background: var(--bg); margin-bottom: 1.5rem; }
+.confirm-modal select:focus { outline: none; border-color: var(--terracotta); }
+.confirm-modal-actions { display: flex; gap: 0.8rem; }
+.confirm-modal-actions button { flex: 1; padding: 0.9rem; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.btn-modal-confirm { background: var(--success); color: white; }
+.btn-modal-confirm:hover { filter: brightness(1.1); }
+.btn-modal-decline { background: var(--danger); color: white; }
+.btn-modal-decline:hover { filter: brightness(1.1); }
+.btn-modal-cancel { background: transparent; border: 2px solid var(--border); color: var(--ink-soft); }
+.btn-modal-cancel:hover { background: var(--border); }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 4rem 2rem; color: var(--muted); }
+.empty-state h3 { font-family: 'Fraunces', serif; font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--ink-soft); }
+
+/* Toast */
+.toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 100;
+  background: var(--navy); color: white; padding: 1rem 1.5rem; border-radius: 12px;
+  font-size: 0.9rem; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  opacity: 0; transform: translateY(10px); transition: 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .dash-body { padding: 1.5rem; }
+  .dash-stats { grid-template-columns: repeat(2, 1fr); }
+  .appt-card { flex-direction: column; }
+  .appt-actions { margin-left: 0; margin-top: 1rem; }
+  .dash-header { padding: 1rem 1.5rem; }
+  .slot-grid { grid-template-columns: repeat(2, 1fr); }
+  .tabs { overflow-x: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🌵 Kayci<span>.</span> Admin</div>
+    <p class="login-sub">Manage appointments, availability & waitlist</p>
+    <div class="login-field">
+      <label>Admin Password</label>
+      <input type="password" id="admin-pass" placeholder="Enter password" onkeypress="if(event.key==='Enter')adminLogin()">
+    </div>
+    <button class="login-btn" onclick="adminLogin()">Log In →</button>
+    <div class="login-error" id="login-error">Invalid password. Try again.</div>
+    <div class="login-hint">Prototype password: saguaro2024</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+  <div class="dash-header">
+    <h1>🌵 Kayci<span>.</span> Cactus — Admin</h1>
+    <button class="dash-logout" onclick="logout()">Log Out</button>
+  </div>
+
+  <div class="dash-body">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="appointments" onclick="switchTab('appointments')">Appointments <span class="tab-badge pending" id="appt-badge" style="display:none">0</span></button>
+      <button class="tab-btn" data-tab="availability" onclick="switchTab('availability')">Availability</button>
+      <button class="tab-btn" data-tab="waitlist" onclick="switchTab('waitlist')">Waitlist <span class="tab-badge waiting" id="wl-badge" style="display:none">0</span></button>
+    </div>
+
+    <!-- APPOINTMENTS TAB -->
+    <div class="tab-content active" id="tab-appointments">
+      <div class="dash-stats">
+        <div class="stat-card"><div class="stat-num total" id="stat-total">0</div><div class="stat-label">Total Bookings</div></div>
+        <div class="stat-card"><div class="stat-num pending" id="stat-pending">0</div><div class="stat-label">Pending</div></div>
+        <div class="stat-card"><div class="stat-num confirmed" id="stat-confirmed">0</div><div class="stat-label">Confirmed</div></div>
+        <div class="stat-card"><div class="stat-num today" id="stat-today">0</div><div class="stat-label">Today</div></div>
+      </div>
+      <div class="dash-filters">
+        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+        <button class="filter-btn" data-filter="pending" onclick="setFilter('pending')">Pending</button>
+        <button class="filter-btn" data-filter="confirmed" onclick="setFilter('confirmed')">Confirmed</button>
+        <button class="filter-btn" data-filter="cancelled" onclick="setFilter('cancelled')">Cancelled</button>
+      </div>
+      <div class="appt-list" id="appt-list"></div>
+    </div>
+
+    <!-- AVAILABILITY TAB -->
+    <div class="tab-content" id="tab-availability">
+      <div class="avail-section">
+        <h3>Set Open Hours for a Date</h3>
+        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1rem;">Select a date, toggle the time slots you're available, and save. Clients will only see these slots when booking.</p>
+        <div class="avail-date-row">
+          <div>
+            <label>Date</label>
+            <input type="date" id="avail-date" onchange="loadExistingAvailability()">
+          </div>
+          <button class="avail-save-btn" onclick="saveAvailability()">Save Availability</button>
+          <button class="avail-clear-btn" onclick="clearAvailability()">Clear Date</button>
+        </div>
+        <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:0.5rem;">Toggle Open Slots</label>
+        <div class="slot-grid" id="avail-slots"></div>
+      </div>
+
+      <div class="avail-section">
+        <h3>Set Recurring Hours (Date Range)</h3>
+        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1rem;">Set the same open hours across a range of dates (e.g., Mon–Fri 9–5).</p>
+        <div class="avail-date-row">
+          <div>
+            <label>Start Date</label>
+            <input type="date" id="avail-start-date">
+          </div>
+          <div>
+            <label>End Date</label>
+            <input type="date" id="avail-end-date">
+          </div>
+          <button class="avail-save-btn" onclick="saveBulkAvailability()">Apply to Range</button>
+        </div>
+        <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:0.5rem;">Toggle Slots for Range</label>
+        <div class="slot-grid" id="avail-bulk-slots"></div>
+      </div>
+
+      <div class="avail-existing">
+        <h4>Currently Set Open Hours</h4>
+        <div id="avail-existing-list"></div>
+      </div>
+    </div>
+
+    <!-- WAITLIST TAB -->
+    <div class="tab-content" id="tab-waitlist">
+      <div class="dash-stats">
+        <div class="stat-card"><div class="stat-num total" id="wl-stat-total">0</div><div class="stat-label">Total Requests</div></div>
+        <div class="stat-card"><div class="stat-num pending" id="wl-stat-waiting" style="color:var(--gold)">0</div><div class="stat-label">Waiting</div></div>
+        <div class="stat-card"><div class="stat-num confirmed" id="wl-stat-confirmed">0</div><div class="stat-label">Confirmed</div></div>
+        <div class="stat-card"><div class="stat-num today" id="wl-stat-declined" style="color:var(--danger)">0</div><div class="stat-label">Declined</div></div>
+      </div>
+      <div class="dash-filters">
+        <button class="filter-btn active" data-wlfilter="all" onclick="setWlFilter('all')">All</button>
+        <button class="filter-btn" data-wlfilter="waiting" onclick="setWlFilter('waiting')">Waiting</button>
+        <button class="filter-btn" data-wlfilter="confirmed" onclick="setWlFilter('confirmed')">Confirmed</button>
+        <button class="filter-btn" data-wlfilter="declined" onclick="setWlFilter('declined')">Declined</button>
+      </div>
+      <div class="appt-list" id="wl-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Waitlist Confirm Modal -->
+<div class="confirm-modal-overlay" id="confirm-modal">
+  <div class="confirm-modal">
+    <h3>Confirm Waitlist Request</h3>
+    <p id="confirm-details"></p>
+    <label>Assign a Time Slot</label>
+    <select id="confirm-time">
+      <option value="">— Select a time —</option>
+    </select>
+    <div class="confirm-modal-actions">
+      <button class="btn-modal-cancel" onclick="closeConfirmModal()">Cancel</button>
+      <button class="btn-modal-decline" onclick="declineWaitlist()">Decline</button>
+      <button class="btn-modal-confirm" onclick="confirmWaitlist()">Confirm & Notify</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+const API_BASE = window.API_BASE || '';
+let adminToken = null;
+let allAppointments = [];
+let allWaitlist = [];
+let availabilityData = {};
+let currentFilter = 'all';
+let currentWlFilter = 'all';
+let currentTab = 'appointments';
+let selectedAvailSlots = new Set();
+let selectedBulkSlots = new Set();
+let pendingWlId = null;
+
+const ADMIN_PASS = 'saguaro2024';
+const ALL_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+
+// ── Auth ──
+function adminLogin() {
+  const pass = document.getElementById('admin-pass').value;
+  if (pass === ADMIN_PASS) {
+    adminToken = pass;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').classList.add('active');
+    loadAll();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function logout() {
+  adminToken = null;
+  document.getElementById('dashboard').classList.remove('active');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+// ── Tabs ──
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
+  if (tab === 'availability') renderAvailabilityManager();
+}
+
+// ── Load all data ──
+async function loadAll() {
+  await Promise.all([loadAppointments(), loadWaitlist(), loadAvailability()]);
+  renderAll();
+}
+
+function renderAll() {
+  renderAppointments();
+  updateStats();
+  renderWaitlist();
+  updateWlStats();
+  renderAvailabilityManager();
+  updateBadges();
+}
+
+// ── Appointments ──
+async function loadAppointments() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/appointments`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+    allAppointments = await res.json();
+  } catch (e) { allAppointments = []; }
+}
+
+function updateStats() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('stat-total').textContent = allAppointments.length;
+  document.getElementById('stat-pending').textContent = allAppointments.filter(a => a.status === 'pending').length;
+  document.getElementById('stat-confirmed').textContent = allAppointments.filter(a => a.status === 'confirmed').length;
+  document.getElementById('stat-today').textContent = allAppointments.filter(a => a.date === today && a.status === 'confirmed').length;
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
+  renderAppointments();
+}
+
+function renderAppointments() {
+  const list = document.getElementById('appt-list');
+  const filtered = currentFilter === 'all' ? allAppointments : allAppointments.filter(a => a.status === currentFilter);
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state"><h3>No appointments yet</h3><p>When clients book, their requests will appear here.</p></div>';
+    return;
+  }
+  list.innerHTML = filtered.map(a => `
+    <div class="appt-card">
+      <div class="appt-info">
+        <div class="appt-top">
+          <span class="appt-name">${a.name}</span>
+          <span class="appt-service">${a.serviceName} · $${a.servicePrice}</span>
+          <span class="appt-badge ${a.status}">${a.status}</span>
+          ${a.fromWaitlist ? '<span style="font-size:0.75rem;color:var(--gold);font-weight:600;">⭐ FROM WAITLIST</span>' : ''}
+        </div>
+        <div class="appt-details">
+          <div class="appt-detail-item">📅 <strong>${a.date}</strong></div>
+          <div class="appt-detail-item">🕐 <strong>${a.time}</strong></div>
+          <div class="appt-detail-item">⏱ <strong>${a.serviceDuration}</strong></div>
+          <div class="appt-detail-item">📧 <strong>${a.email}</strong></div>
+          ${a.phone ? `<div class="appt-detail-item">📞 <strong>${a.phone}</strong></div>` : ''}
+        </div>
+        ${a.notes ? `<div class="appt-notes">"${a.notes}"</div>` : ''}
+      </div>
+      <div class="appt-actions">
+        ${a.status === 'pending' ? `<button class="btn-confirm" onclick="updateStatus('${a.id}','confirmed')">Confirm</button>` : ''}
+        ${a.status !== 'cancelled' ? `<button class="btn-cancel" onclick="updateStatus('${a.id}','cancelled')">Cancel</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function updateStatus(id, status) {
+  try {
+    await fetch(`${API_BASE}/api/admin/appointments/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ status })
+    });
+  } catch (e) {}
+  const appt = allAppointments.find(a => a.id === id);
+  if (appt) appt.status = status;
+  renderAppointments(); updateStats(); updateBadges();
+  showToast(`Appointment ${status}`);
+}
+
+// ── Waitlist ──
+async function loadWaitlist() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/waitlist`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+    allWaitlist = await res.json();
+  } catch (e) { allWaitlist = []; }
+}
+
+function updateWlStats() {
+  document.getElementById('wl-stat-total').textContent = allWaitlist.length;
+  document.getElementById('wl-stat-waiting').textContent = allWaitlist.filter(w => w.status === 'waiting').length;
+  document.getElementById('wl-stat-confirmed').textContent = allWaitlist.filter(w => w.status === 'confirmed').length;
+  document.getElementById('wl-stat-declined').textContent = allWaitlist.filter(w => w.status === 'declined').length;
+}
+
+function setWlFilter(filter) {
+  currentWlFilter = filter;
+  document.querySelectorAll('.filter-btn[data-wlfilter]').forEach(btn => btn.classList.toggle('active', btn.dataset.wlfilter === filter));
+  renderWaitlist();
+}
+
+function renderWaitlist() {
+  const list = document.getElementById('wl-list');
+  const filtered = currentWlFilter === 'all' ? allWaitlist : allWaitlist.filter(w => w.status === currentWlFilter);
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state"><h3>No waitlist requests</h3><p>When clients join the waitlist, they\'ll appear here.</p></div>';
+    return;
+  }
+  list.innerHTML = filtered.map(w => `
+    <div class="appt-card">
+      <div class="appt-info">
+        <div class="appt-top">
+          <span class="appt-name">${w.name}</span>
+          <span class="appt-service">${w.serviceName}</span>
+          <span class="appt-badge ${w.status}">${w.status}</span>
+        </div>
+        <div class="appt-details">
+          <div class="appt-detail-item">📅 <strong>${w.date}</strong></div>
+          <div class="appt-detail-item">📧 <strong>${w.email}</strong></div>
+          ${w.phone ? `<div class="appt-detail-item">📞 <strong>${w.phone}</strong></div>` : ''}
+        </div>
+        ${w.notes ? `<div class="appt-notes">"${w.notes}"</div>` : ''}
+      </div>
+      <div class="appt-actions">
+        ${w.status === 'waiting' ? `
+          <button class="btn-confirm" onclick="openConfirmModal('${w.id}')">Confirm & Assign Time</button>
+          <button class="btn-cancel" onclick="declineWaitlistById('${w.id}')">Decline</button>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function openConfirmModal(id) {
+  pendingWlId = id;
+  const entry = allWaitlist.find(w => w.id === id);
+  if (!entry) return;
+
+  document.getElementById('confirm-details').textContent = `${entry.name} wants ${entry.serviceName} on ${entry.date}. Assign a time slot:`;
+
+  // Populate time slots
+  const select = document.getElementById('confirm-time');
+  select.innerHTML = '<option value="">— Select a time —</option>';
+  ALL_SLOTS.forEach(slot => select.innerHTML += `<option value="${slot}">${slot}</option>`);
+
+  document.getElementById('confirm-modal').classList.add('active');
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('active');
+  pendingWlId = null;
+}
+
+async function confirmWaitlist() {
+  if (!pendingWlId) return;
+  const time = document.getElementById('confirm-time').value;
+  if (!time) { alert('Please select a time slot.'); return; }
+
+  try {
+    await fetch(`${API_BASE}/api/admin/waitlist/${pendingWlId}/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ time })
+    });
+  } catch (e) {}
+
+  const entry = allWaitlist.find(w => w.id === pendingWlId);
+  if (entry) entry.status = 'confirmed';
+
+  closeConfirmModal();
+  await loadAll();
+  showToast('Waitlist confirmed & client notified!');
+}
+
+async function declineWaitlistById(id) {
+  try {
+    await fetch(`${API_BASE}/api/admin/waitlist/${id}/decline`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+    });
+  } catch (e) {}
+  const entry = allWaitlist.find(w => w.id === id);
+  if (entry) entry.status = 'declined';
+  renderWaitlist(); updateWlStats(); updateBadges();
+  showToast('Waitlist request declined');
+}
+
+function declineWaitlist() {
+  if (pendingWlId) {
+    declineWaitlistById(pendingWlId);
+    closeConfirmModal();
+  }
+}
+
+// ── Availability ──
+async function loadAvailability() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/availability`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+    availabilityData = await res.json();
+  } catch (e) { availabilityData = {}; }
+}
+
+function renderAvailabilityManager() {
+  // Render slot toggle grids
+  const slotsEl = document.getElementById('avail-slots');
+  const bulkSlotsEl = document.getElementById('avail-bulk-slots');
+
+  slotsEl.innerHTML = ALL_SLOTS.map(slot => `
+    <div class="slot-toggle" data-slot="${slot}" onclick="toggleSlot('${slot}', 'single')">${slot}</div>
+  `).join('');
+
+  bulkSlotsEl.innerHTML = ALL_SLOTS.map(slot => `
+    <div class="slot-toggle" data-slot="${slot}" onclick="toggleSlot('${slot}', 'bulk')">${slot}</div>
+  `).join('');
+
+  selectedAvailSlots.clear();
+  selectedBulkSlots.clear();
+
+  // Render existing availability
+  renderExistingAvailability();
+}
+
+function renderExistingAvailability() {
+  const list = document.getElementById('avail-existing-list');
+  const dates = Object.keys(availabilityData).sort();
+
+  if (dates.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">No open hours set yet. Use the form above to set availability.</p>';
+    return;
+  }
+
+  list.innerHTML = dates.map(date => `
+    <div class="avail-date-card">
+      <div>
+        <div class="avail-date-card-date">${date}</div>
+        <div class="avail-date-card-slots">${availabilityData[date].join(' · ')}</div>
+      </div>
+      <button class="avail-date-card-remove" onclick="removeAvailability('${date}')">Remove</button>
+    </div>
+  `).join('');
+}
+
+function toggleSlot(slot, type) {
+  const set = type === 'single' ? selectedAvailSlots : selectedBulkSlots;
+  const grid = type === 'single' ? document.getElementById('avail-slots') : document.getElementById('avail-bulk-slots');
+  const el = grid.querySelector(`[data-slot="${slot}"]`);
+
+  if (set.has(slot)) { set.delete(slot); el.classList.remove('selected'); }
+  else { set.add(slot); el.classList.add('selected'); }
+}
+
+async function loadExistingAvailability() {
+  const date = document.getElementById('avail-date').value;
+  if (!date) return;
+
+  // Load existing slots for this date
+  selectedAvailSlots.clear();
+  const slots = availabilityData[date] || [];
+  slots.forEach(s => selectedAvailSlots.add(s));
+
+  // Update UI
+  document.querySelectorAll('#avail-slots .slot-toggle').forEach(el => {
+    el.classList.toggle('selected', selectedAvailSlots.has(el.dataset.slot));
+  });
+}
+
+async function saveAvailability() {
+  const date = document.getElementById('avail-date').value;
+  if (!date) { alert('Please select a date.'); return; }
+
+  const slots = Array.from(selectedAvailSlots).sort();
+
+  try {
+    await fetch(`${API_BASE}/api/admin/availability`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ date, slots })
+    });
+    availabilityData[date] = slots;
+  } catch (e) {
+    availabilityData[date] = slots; // local fallback
+  }
+
+  renderExistingAvailability();
+  showToast(`Availability saved for ${date}`);
+}
+
+async function saveBulkAvailability() {
+  const startDate = document.getElementById('avail-start-date').value;
+  const endDate = document.getElementById('avail-end-date').value;
+  if (!startDate || !endDate) { alert('Please select start and end dates.'); return; }
+
+  const slots = Array.from(selectedBulkSlots).sort();
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/availability/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ startDate, endDate, slots })
+    });
+    const data = await res.json();
+    if (data.dates) data.dates.forEach(d => availabilityData[d] = [...slots]);
+  } catch (e) {
+    // local fallback
+    const start = new Date(startDate), end = new Date(endDate);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      availabilityData[d.toISOString().split('T')[0]] = [...slots];
+    }
+  }
+
+  renderExistingAvailability();
+  showToast(`Availability saved for date range`);
+}
+
+async function clearAvailability() {
+  const date = document.getElementById('avail-date').value;
+  if (!date) { alert('Please select a date to clear.'); return; }
+
+  try {
+    await fetch(`${API_BASE}/api/admin/availability/${date}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${adminToken}` }
+    });
+  } catch (e) {}
+
+  delete availabilityData[date];
+  selectedAvailSlots.clear();
+  document.querySelectorAll('#avail-slots .slot-toggle').forEach(el => el.classList.remove('selected'));
+  renderExistingAvailability();
+  showToast(`Availability cleared for ${date}`);
+}
+
+async function removeAvailability(date) {
+  try {
+    await fetch(`${API_BASE}/api/admin/availability/${date}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${adminToken}` }
+    });
+  } catch (e) {}
+  delete availabilityData[date];
+  renderExistingAvailability();
+  showToast(`Availability removed for ${date}`);
+}
+
+// ── Badges ──
+function updateBadges() {
+  const pendingCount = allAppointments.filter(a => a.status === 'pending').length;
+  const waitingCount = allWaitlist.filter(w => w.status === 'waiting').length;
+  const apptBadge = document.getElementById('appt-badge');
+  const wlBadge = document.getElementById('wl-badge');
+  if (pendingCount > 0) { apptBadge.textContent = pendingCount; apptBadge.style.display = 'inline-flex'; } else { apptBadge.style.display = 'none'; }
+  if (waitingCount > 0) { wlBadge.textContent = waitingCount; wlBadge.style.display = 'inline-flex'; } else { wlBadge.style.display = 'none'; }
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = '✓ ' + msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ── Init ──
+document.getElementById('avail-date').addEventListener('change', loadExistingAvailability);
+
+// Auto-refresh every 30s
+setInterval(() => { if (adminToken) loadAll(); }, 30000);
+</script>
+</body>
+</html>
