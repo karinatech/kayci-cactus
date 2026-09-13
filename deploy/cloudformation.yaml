@@ -64,6 +64,15 @@ Resources:
                   - dynamodb:Scan
                   - dynamodb:Query
                 Resource: !GetAtt KayciDynamoTable.Arn
+        - PolicyName: KayciS3MediaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub ${KayciMediaBucket.Arn}/*
         - PolicyName: KayciSESAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -95,9 +104,33 @@ Resources:
           GOOGLE_BUFFER_MINUTES: '15'
           GOOGLE_SLOT_STEP_MINUTES: '30'
           GOOGLE_ADD_ATTENDEES: 'false'
+          UPLOAD_BUCKET: !Ref KayciMediaBucket
       Code:
         S3Bucket: !Ref DeployBucketName
         S3Key: lambda.zip
+
+  # ── S3 media bucket for admin-uploaded images (public read) ──
+  KayciMediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub kayci-cactus-media-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  KayciMediaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref KayciMediaBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub ${KayciMediaBucket.Arn}/uploads/*
 
   # ── API Gateway ──
   KayciApi:
@@ -242,3 +275,6 @@ Outputs:
   AmplifyAppId:
     Description: Amplify App ID
     Value: !Ref KayciAmplifyApp
+  MediaBucket:
+    Description: Public S3 bucket for admin-uploaded images
+    Value: !Ref KayciMediaBucket

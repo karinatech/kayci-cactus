@@ -78,3 +78,22 @@ Admin → Calendar shows connection status, upcoming events from Google, and a f
 Set the same env vars on the Lambda function. Redeploy `lambda.zip` including `googleCalendar.js` and `node_modules` (`google-auth-library`).
 
 Do not commit `.env` or the service-account JSON key.
+
+### Redeploying the Lambda (important)
+
+The Lambda loads its code from S3 — pushing to GitHub updates the website (Amplify) but **does not** update the API. If admin buttons like Block Time / Mark Day Off ever return `Not found`, the Lambda code is stale. Redeploy with:
+
+```bash
+./scripts/deploy-lambda.sh
+```
+
+or manually:
+
+```bash
+cd lambda && npm install && zip -qr ../lambda.zip . && cd ..
+aws s3 cp lambda.zip s3://kayci-cactus-deploy-061051222996/lambda.zip
+aws lambda update-function-code --function-name kayci-cactus-api \
+  --s3-bucket kayci-cactus-deploy-061051222996 --s3-key lambda.zip
+```
+
+If Block Time works but returns "Google Calendar is not configured", the code is fine — the Google env vars above are missing on the function.

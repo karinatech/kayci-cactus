@@ -5,3 +5,5 @@ node_modules/
 deploy/iam-policy.json
 deploy/apply-iam-policy.sh
 /tmp/
+lambda.zip
+public/uploads/

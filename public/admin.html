@@ -156,6 +156,15 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
 .btn-modal-cancel { background: transparent; border: 2px solid var(--border); color: var(--ink-soft); }
 .btn-modal-cancel:hover { background: var(--border); }
 
+/* Settings form */
+.st-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
+#settings-form input, #settings-form textarea { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: 'Outfit', sans-serif; background: var(--bg-card); color: var(--ink); resize: vertical; }
+#settings-form input:focus, #settings-form textarea:focus { outline: none; border-color: var(--terracotta); }
+.svc-actions { display: flex; align-items: center; gap: 0.4rem; padding-right: 1rem; flex-shrink: 0; }
+.svc-icon-btn { background: transparent; border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 0.9rem; color: var(--ink-soft); transition: 0.2s; }
+.svc-icon-btn:hover { border-color: var(--terracotta); color: var(--terracotta); }
+.svc-hidden-badge { background: var(--muted); color: white; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.5px; vertical-align: middle; }
+
 /* Empty state */
 .empty-state { text-align: center; padding: 4rem 2rem; color: var(--muted); }
 .empty-state h3 { font-family: 'Fraunces', serif; font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--ink-soft); }
@@ -209,6 +218,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
       <button class="tab-btn" data-tab="availability" onclick="switchTab('availability')">Calendar</button>
       <button class="tab-btn" data-tab="waitlist" onclick="switchTab('waitlist')">Waitlist <span class="tab-badge waiting" id="wl-badge" style="display:none">0</span></button>
       <button class="tab-btn" data-tab="services" onclick="switchTab('services')">Services</button>
+      <button class="tab-btn" data-tab="website" onclick="switchTab('website')">Website</button>
     </div>
 
     <!-- APPOINTMENTS TAB -->
@@ -310,9 +320,76 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
     <!-- SERVICES TAB -->
     <div class="tab-content" id="tab-services">
       <div class="avail-section">
-        <h3>Manage Services</h3>
-        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1.5rem;">Edit service names, descriptions, prices, and images. Changes appear instantly on the website.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
+          <div>
+            <h3 style="margin-bottom:0.2rem;">Manage Services</h3>
+            <p style="color:var(--ink-soft);font-size:0.9rem;margin:0;">Add, edit, reorder, hide, or delete services. Changes appear instantly on the website.</p>
+          </div>
+          <div style="display:flex;gap:0.6rem;">
+            <button class="filter-btn" onclick="restoreDefaultServices()">Restore deleted defaults</button>
+            <button class="avail-save-btn" onclick="toggleAddService()">+ Add Service</button>
+          </div>
+        </div>
+        <div id="add-service-form" style="display:none;padding:1.5rem;border:2px dashed var(--gold);border-radius:10px;margin-bottom:1.5rem;background:var(--bg);">
+          <h4 style="font-family:'Fraunces',serif;margin-bottom:1rem;">New Service</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+            <div><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Service Name *</label>
+              <input type="text" id="new-svc-name" placeholder="e.g. Hot Bamboo Fusion" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);"></div>
+            <div><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Price ($) *</label>
+              <input type="number" id="new-svc-price" placeholder="120" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);"></div>
+            <div><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Duration *</label>
+              <input type="text" id="new-svc-duration" placeholder="60 min" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);"></div>
+            <div><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Image</label>
+              <div style="display:flex;gap:0.5rem;">
+                <input type="text" id="new-svc-image" placeholder="Paste image URL or upload →" style="flex:1;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);">
+                <label class="filter-btn" style="white-space:nowrap;cursor:pointer;">📷 Upload<input type="file" accept="image/*" style="display:none" onchange="uploadImage(this,'new-svc-image',null)"></label>
+              </div></div>
+          </div>
+          <div style="margin-bottom:1rem;"><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Description *</label>
+            <textarea id="new-svc-desc" rows="2" placeholder="Short client-facing description…" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);resize:vertical;"></textarea></div>
+          <div style="display:flex;gap:0.8rem;">
+            <button class="filter-btn" onclick="toggleAddService()">Cancel</button>
+            <button class="filter-btn active" onclick="createService()">Create Service</button>
+          </div>
+        </div>
         <div id="services-admin-list"></div>
+      </div>
+    </div>
+
+    <!-- WEBSITE TAB -->
+    <div class="tab-content" id="tab-website">
+      <div class="avail-section">
+        <h3>Customize Website</h3>
+        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1.5rem;">Update the text and colors on the public website. Changes save to the database and appear instantly — no redeploy needed.</p>
+        <div id="settings-form" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div><label class="st-label">Business name</label><input id="st-businessName"></div>
+          <div><label class="st-label">Location tag (hero, small text)</label><input id="st-heroTag"></div>
+          <div style="grid-column:1/-1;"><label class="st-label">Hero headline (use | for the highlighted second line)</label><input id="st-heroTitle" placeholder="Kayci Sonoran|Massage & Therapy"></div>
+          <div style="grid-column:1/-1;"><label class="st-label">Hero subtext</label><textarea id="st-heroSubtitle" rows="2"></textarea></div>
+          <div><label class="st-label">Services section heading</label><input id="st-servicesHeading"></div>
+          <div><label class="st-label">Services section subtext</label><input id="st-servicesSub"></div>
+          <div><label class="st-label">About small label</label><input id="st-aboutLabel"></div>
+          <div><label class="st-label">About heading</label><input id="st-aboutHeading"></div>
+          <div style="grid-column:1/-1;"><label class="st-label">About text (blank line = new paragraph)</label><textarea id="st-aboutText" rows="4"></textarea></div>
+          <div><label class="st-label">Booking banner heading</label><input id="st-ctaHeading"></div>
+          <div><label class="st-label">Booking banner text</label><input id="st-ctaText"></div>
+          <div style="grid-column:1/-1;"><label class="st-label">Footer line</label><input id="st-footerLine"></div>
+          <div><label class="st-label">Accent color</label>
+            <div style="display:flex;gap:0.6rem;align-items:center;">
+              <input type="color" id="st-accentColor" style="width:52px;height:40px;padding:0.2rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);cursor:pointer;">
+              <input id="st-accentColor-hex" style="flex:1;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);" placeholder="#d4846a">
+            </div></div>
+          <div><label class="st-label">Accent color (dark hover)</label>
+            <div style="display:flex;gap:0.6rem;align-items:center;">
+              <input type="color" id="st-accentDark" style="width:52px;height:40px;padding:0.2rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);cursor:pointer;">
+              <input id="st-accentDark-hex" style="flex:1;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);" placeholder="#b5644a">
+            </div></div>
+        </div>
+        <div style="display:flex;gap:0.8rem;margin-top:1.5rem;">
+          <button class="avail-save-btn" onclick="saveSiteSettings()">Save Website Content</button>
+          <button class="avail-clear-btn" onclick="resetSiteSettings()">Reset all to defaults</button>
+          <a href="/" target="_blank" rel="noopener" class="filter-btn" style="text-decoration:none;display:inline-block;">View live site ↗</a>
+        </div>
       </div>
     </div>
   </div>
@@ -357,9 +434,21 @@ const ADMIN_PASS = 'saguaro2024';
 const ALL_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
 
 // ── Auth ──
-function adminLogin() {
+async function adminLogin() {
   const pass = document.getElementById('admin-pass').value;
-  if (pass === ADMIN_PASS) {
+  let ok = false;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pass })
+    });
+    ok = res.ok;
+    // 404/stale deployment → allow local fallback so the portal stays usable
+    if (!ok && res.status !== 401) ok = pass === ADMIN_PASS;
+  } catch (e) {
+    ok = pass === ADMIN_PASS; // offline/local fallback
+  }
+  if (ok) {
     adminToken = pass;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('dashboard').classList.add('active');
@@ -384,6 +473,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
   if (tab === 'availability') renderAvailabilityManager();
   if (tab === 'services') renderServicesAdmin();
+  if (tab === 'website') loadSiteSettings();
 }
 
 // ── Load all data ──
@@ -406,7 +496,8 @@ function renderAll() {
 async function loadAppointments() {
   try {
     const res = await fetch(`${API_BASE}/api/admin/appointments`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
-    allAppointments = await res.json();
+    const data = await res.json();
+    allAppointments = Array.isArray(data) ? data : [];
   } catch (e) { allAppointments = []; }
 }
 
@@ -476,7 +567,8 @@ async function updateStatus(id, status) {
 async function loadWaitlist() {
   try {
     const res = await fetch(`${API_BASE}/api/admin/waitlist`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
-    allWaitlist = await res.json();
+    const data = await res.json();
+    allWaitlist = Array.isArray(data) ? data : [];
   } catch (e) { allWaitlist = []; }
 }
 
@@ -604,6 +696,10 @@ async function loadCalendarStatus() {
   if (!el) return;
   try {
     const res = await fetch(`${API_BASE}/api/admin/calendar`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+    if (!res.ok) {
+      el.innerHTML = `<strong style="color:var(--danger);">API returned "${(await res.json().catch(()=>({}))).error || res.status}"</strong> — the deployed Lambda is outdated. Upload the latest <code>lambda.zip</code> (see GOOGLE_CALENDAR.md §6), then reload this page.`;
+      return;
+    }
     const data = await res.json();
     window.calendarStatus = data;
     if (data.configured) {
@@ -859,62 +955,250 @@ async function loadServicesAdmin() {
   try {
     const res = await fetch(`${API_BASE}/api/admin/services`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
     if (!res.ok) { console.error('Failed to load services:', res.status); return; }
-    servicesAdminData = await res.json();
+    const data = await res.json();
+    servicesAdminData = Array.isArray(data) ? data : [];
   } catch (e) { console.error('Error loading services:', e); }
 }
+
+function escAttr(t) { return String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 function renderServicesAdmin() {
   const container = document.getElementById('services-admin-list');
   if (!container) return;
   if (!servicesAdminData || servicesAdminData.length === 0) {
-    container.innerHTML = '<p style="color:var(--ink-soft);font-size:0.9rem;">No services found.</p>';
+    container.innerHTML = '<p style="color:var(--ink-soft);font-size:0.9rem;">No services found. Click + Add Service to create one, or Restore deleted defaults.</p>';
     return;
   }
-  container.innerHTML = servicesAdminData.map(s => `
-    <div class="service-edit-card" style="background:var(--bg-card);border:1px solid var(--border);margin-bottom:1.5rem;overflow:hidden;">
+  const inputStyle = 'width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);';
+  container.innerHTML = servicesAdminData.map((s, i) => `
+    <div class="service-edit-card" style="background:var(--bg-card);border:1px solid var(--border);margin-bottom:1rem;overflow:hidden;${s.hidden ? 'opacity:0.6;' : ''}">
       <div style="display:flex;gap:0;align-items:stretch;">
-        <div style="width:120px;height:120px;flex-shrink:0;background-image:url('${s.image}');background-size:cover;background-position:center;" id="img-preview-${s.id}"></div>
-        <div style="flex:1;padding:1rem 1.5rem;">
-          <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;margin-bottom:0.3rem;">${s.name}</div>
-          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.3rem;">${s.duration} · $${s.price}</div>
-          <div style="font-size:0.85rem;color:var(--ink-soft);">${s.desc.substring(0, 80)}${s.desc.length > 80 ? '...' : ''}</div>
+        <div style="width:100px;height:100px;flex-shrink:0;background:var(--border) url('${s.image}') center/cover;" id="img-preview-${s.id}"></div>
+        <div style="flex:1;padding:1rem 1.2rem;min-width:0;">
+          <div style="font-family:'Fraunces',serif;font-size:1.05rem;font-weight:600;margin-bottom:0.2rem;">${escAttr(s.name)} ${s.hidden ? '<span class=\"svc-hidden-badge\">Hidden</span>' : ''}</div>
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.2rem;">${s.duration} · $${s.price}</div>
+          <div style="font-size:0.85rem;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escAttr(s.desc)}</div>
         </div>
-        <div style="display:flex;align-items:center;padding-right:1rem;">
+        <div class="svc-actions">
+          <button class="svc-icon-btn" title="Move up" onclick="moveService('${s.id}',-1)" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="svc-icon-btn" title="Move down" onclick="moveService('${s.id}',1)" ${i === servicesAdminData.length - 1 ? 'disabled' : ''}>↓</button>
           <button class="filter-btn active" onclick="editService('${s.id}')">Edit</button>
+          <button class="svc-icon-btn" title="${s.hidden ? 'Show on website' : 'Hide from website'}" onclick="toggleServiceHidden('${s.id}')">${s.hidden ? ' ' : ' '}</button>
+          <button class="svc-icon-btn" title="Delete" style="color:var(--danger);" onclick="deleteService('${s.id}')"> </button>
         </div>
       </div>
       <div id="edit-form-${s.id}" style="display:none;padding:1.5rem;border-top:1px solid var(--border);background:var(--bg);">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
-          <div class="form-field" style="margin:0;">
+          <div>
             <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Service Name</label>
-            <input type="text" id="svc-name-${s.id}" value="${s.name.replace(/"/g, '&quot;')}" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);">
+            <input type="text" id="svc-name-${s.id}" value="${escAttr(s.name)}" style="${inputStyle}">
           </div>
-          <div class="form-field" style="margin:0;">
+          <div>
             <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Price ($)</label>
-            <input type="number" id="svc-price-${s.id}" value="${s.price}" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);">
+            <input type="number" id="svc-price-${s.id}" value="${s.price}" style="${inputStyle}">
           </div>
-          <div class="form-field" style="margin:0;">
+          <div>
             <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Duration</label>
-            <input type="text" id="svc-duration-${s.id}" value="${s.duration}" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);">
+            <input type="text" id="svc-duration-${s.id}" value="${escAttr(s.duration)}" style="${inputStyle}">
           </div>
-          <div class="form-field" style="margin:0;">
-            <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Image URL</label>
-            <input type="text" id="svc-image-${s.id}" value="${s.image}" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);" oninput="document.getElementById('img-preview-${s.id}').style.backgroundImage='url('+this.value+')'">
+          <div>
+            <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Image</label>
+            <div style="display:flex;gap:0.5rem;">
+              <input type="text" id="svc-image-${s.id}" value="${escAttr(s.image)}" style="${inputStyle}flex:1;" oninput="document.getElementById('img-preview-${s.id}').style.backgroundImage='url('+this.value+')'">
+              <label class="filter-btn" style="white-space:nowrap;cursor:pointer;">📷 Upload<input type="file" accept="image/*" style="display:none" onchange="uploadImage(this,'svc-image-${s.id}','img-preview-${s.id}')"></label>
+            </div>
           </div>
         </div>
         <div class="form-field" style="margin:0 0 1rem 0;">
           <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Description</label>
-          <textarea id="svc-desc-${s.id}" rows="2" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);resize:vertical;">${s.desc.replace(/</g, '&lt;')}</textarea>
+          <textarea id="svc-desc-${s.id}" rows="2" style="${inputStyle}resize:vertical;">${String(s.desc).replace(/</g, '&lt;')}</textarea>
         </div>
         <div style="display:flex;gap:0.8rem;">
           <button class="filter-btn" onclick="cancelEdit('${s.id}')">Cancel</button>
           <button class="filter-btn active" onclick="saveService('${s.id}')">Save Changes</button>
-          <button class="filter-btn" onclick="resetService('${s.id}')" style="margin-left:auto;color:var(--danger);">Reset to Default</button>
         </div>
       </div>
     </div>
   `).join('');
 }
+
+function toggleAddService() {
+  const f = document.getElementById('add-service-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function createService() {
+  const name = document.getElementById('new-svc-name').value.trim();
+  const desc = document.getElementById('new-svc-desc').value.trim();
+  const price = document.getElementById('new-svc-price').value;
+  const duration = document.getElementById('new-svc-duration').value.trim();
+  const image = document.getElementById('new-svc-image').value.trim();
+  if (!name || !desc || !price || !duration) { alert('Name, description, price, and duration are required.'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/services`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ name, desc, price: Number(price), image, duration })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(`Failed to create: ${data.error || res.statusText}`); return; }
+    ['new-svc-name','new-svc-desc','new-svc-price','new-svc-duration','new-svc-image'].forEach(id => document.getElementById(id).value = '');
+    toggleAddService();
+    await loadServicesAdmin();
+    renderServicesAdmin();
+    showToast(`Service "${name}" added`);
+  } catch (e) { alert(`Network error: ${e.message}`); }
+}
+
+async function toggleServiceHidden(id) {
+  const s = servicesAdminData.find(x => x.id === id);
+  if (!s) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/services/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ hidden: !s.hidden })
+    });
+    if (!res.ok) { alert('Failed to update'); return; }
+    await loadServicesAdmin();
+    renderServicesAdmin();
+    showToast(s.hidden ? `"${s.name}" is visible again` : `"${s.name}" hidden from website`);
+  } catch (e) { alert(`Network error: ${e.message}`); }
+}
+
+async function deleteService(id) {
+  const s = servicesAdminData.find(x => x.id === id);
+  if (!confirm(`Permanently delete "${s ? s.name : id}"? Bookings keep their saved copy, but the service disappears from the website.`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/services/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${adminToken}` }
+    });
+    if (!res.ok) { alert('Failed to delete'); return; }
+    await loadServicesAdmin();
+    renderServicesAdmin();
+    showToast('Service deleted');
+  } catch (e) { alert(`Network error: ${e.message}`); }
+}
+
+async function moveService(id, dir) {
+  const idx = servicesAdminData.findIndex(s => s.id === id);
+  const swapIdx = idx + dir;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= servicesAdminData.length) return;
+  const a = servicesAdminData[idx], b = servicesAdminData[swapIdx];
+  const sortA = b.sort, sortB = a.sort;
+  try {
+    await Promise.all([
+      fetch(`${API_BASE}/api/admin/services/${a.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` }, body: JSON.stringify({ sort: sortA }) }),
+      fetch(`${API_BASE}/api/admin/services/${b.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` }, body: JSON.stringify({ sort: sortB }) }),
+    ]);
+  } catch (e) {}
+  await loadServicesAdmin();
+  renderServicesAdmin();
+}
+
+async function restoreDefaultServices() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/services/restore-defaults`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(`Failed: ${data.error || res.statusText}`); return; }
+    await loadServicesAdmin();
+    renderServicesAdmin();
+    showToast(data.restored && data.restored.length ? `Restored ${data.restored.length} default service(s)` : 'Nothing to restore — all defaults present');
+  } catch (e) { alert(`Network error: ${e.message}`); }
+}
+
+// ── Image upload (stores in S3, fills the matching URL field) ──
+async function uploadImage(inputEl, targetInputId, previewId) {
+  const file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  if (file.size > 4 * 1024 * 1024) { alert('Image must be under 4 MB. Try a smaller or compressed image.'); inputEl.value = ''; return; }
+  showToast('Uploading image…');
+  try {
+    const reader = new FileReader();
+    const dataUrl = await new Promise((resolve, reject) => { reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+    const base64 = String(dataUrl).split(',')[1];
+    const res = await fetch(`${API_BASE}/api/admin/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ filename: file.name, contentType: file.type, data: base64 })
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(out.error || 'Upload failed'); return; }
+    const target = document.getElementById(targetInputId);
+    if (target) { target.value = out.url; target.dispatchEvent(new Event('input')); }
+    if (previewId) {
+      const p = document.getElementById(previewId);
+      if (p) p.style.backgroundImage = `url('${out.url}')`;
+    }
+    showToast('Image uploaded');
+  } catch (e) { alert(`Upload error: ${e.message}`); }
+  finally { inputEl.value = ''; }
+}
+
+// ── Website settings ──
+let siteSettingsLoaded = false;
+const SETTING_KEYS = ['businessName','heroTag','heroTitle','heroSubtitle','servicesHeading','servicesSub','aboutLabel','aboutHeading','aboutText','ctaHeading','ctaText','footerLine','accentColor','accentDark'];
+
+async function loadSiteSettings() {
+  try {
+    const res = await fetch(`${API_BASE}/api/site-settings`);
+    if (!res.ok) return;
+    const s = await res.json();
+    SETTING_KEYS.forEach(k => {
+      const el = document.getElementById(`st-${k}`);
+      if (el && s[k] !== undefined) el.value = s[k];
+    });
+    ['accentColor','accentDark'].forEach(k => {
+      const hex = document.getElementById(`st-${k}-hex`);
+      if (hex && s[k]) hex.value = s[k];
+    });
+    siteSettingsLoaded = true;
+  } catch (e) {}
+}
+
+async function saveSiteSettings() {
+  const payload = {};
+  SETTING_KEYS.forEach(k => {
+    const el = document.getElementById(`st-${k}`);
+    if (el) payload[k] = el.value;
+  });
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/site-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); alert(`Failed to save: ${err.error || res.statusText}`); return; }
+    showToast('Website content saved — live now');
+  } catch (e) { alert(`Network error: ${e.message}`); }
+}
+
+async function resetSiteSettings() {
+  if (!confirm('Reset ALL website text and colors back to the original defaults?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/site-settings/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` }
+    });
+    if (!res.ok) { alert('Failed to reset'); return; }
+    siteSettingsLoaded = false;
+    await loadSiteSettings();
+    showToast('Website content reset to defaults');
+  } catch (e) { alert(`Network error: ${e.message}`); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  [['st-accentColor','st-accentColor-hex'],['st-accentDark','st-accentDark-hex']].forEach(([picker, hex]) => {
+    const p = document.getElementById(picker), h = document.getElementById(hex);
+    if (!p || !h) return;
+    p.addEventListener('input', () => { h.value = p.value; });
+    h.addEventListener('input', () => { if (/^#[0-9a-fA-F]{6}$/.test(h.value)) p.value = h.value; });
+  });
+});
 
 function editService(id) {
   document.getElementById(`edit-form-${id}`).style.display = 'block';
@@ -954,21 +1238,7 @@ async function saveService(id) {
   }
 }
 
-async function resetService(id) {
-  if (!confirm('Reset this service to its default values?')) return;
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/services/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${adminToken}` }
-    });
-    if (!res.ok) { alert('Failed to reset'); return; }
-    await loadServicesAdmin();
-    renderServicesAdmin();
-    showToast('Service reset to default');
-  } catch (e) {
-    alert(`Network error: ${e.message}`);
-  }
-}
+
 
 // ── Toast ──
 function showToast(msg) {
@@ -979,7 +1249,8 @@ function showToast(msg) {
 }
 
 // ── Init ──
-document.getElementById('avail-date').addEventListener('change', loadExistingAvailability);
+const _availDateEl = document.getElementById('avail-date');
+if (_availDateEl) _availDateEl.addEventListener('change', loadExistingAvailability);
 
 // Auto-refresh every 30s
 setInterval(() => { if (adminToken) loadAll(); }, 30000);

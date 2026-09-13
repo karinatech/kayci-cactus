@@ -8,7 +8,7 @@ const calendar = require('./lib/googleCalendar');
 const app = express();
 const PORT = process.env.PORT || 3300;
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '8mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── In-memory data store (prototype; swap for DB later) ──
@@ -41,14 +41,43 @@ const SERVICES = [
   { id: 'cactus-cupping', name: 'Cactus Flower Cupping',     duration: '50 min', price: 110, desc: 'Modern cupping therapy to improve circulation and release fascia.', image: 'https://images.pexels.com/photos/6663584/pexels-photo-6663584.jpeg?auto=compress&cs=tinysrgb&w=600' },
   { id: 'migraine-relief', name: 'Migraine Relief Massage',  duration: '45 min', price:  95, desc: 'Targeted head, neck, and shoulder massage to ease tension headaches and migraines.', image: 'https://images.pexels.com/photos/3998013/pexels-photo-3998013.jpeg?auto=compress&cs=tinysrgb&w=600' },
 ];
+SERVICES.forEach((s, i) => { s.sort = i; s.hidden = false; });
+
+// ── Site settings (local dev: in-memory copy; production: DynamoDB) ──
+const DEFAULT_SETTINGS = {
+  businessName: 'Kayci Sonoran',
+  heroTag: 'Verrido · Buckeye, AZ',
+  heroTitle: 'Kayci Sonoran|Massage & Therapy',
+  heroSubtitle: 'Indulge in the ultimate massage experience. Escape the everyday and treat yourself to therapies designed for total relaxation and renewal.',
+  servicesHeading: 'Step into a world of luxury and serenity',
+  servicesSub: 'Each treatment blends professional technique with the calming essence of the Sonoran Desert.',
+  aboutLabel: 'Experience the Difference!',
+  aboutHeading: 'A sanctuary rooted in Arizona tradition',
+  aboutText: "Our practice draws from the healing traditions of the Southwest. From the warmth of sun-baked river stones to the calming scent of desert sage, every detail is designed to reconnect you with the natural rhythm of the land.\n\nWhether you're recovering from a hike in the White Tank Mountains or decompressing after a long work week, we tailor every session to your body's needs.",
+  ctaHeading: 'Relax Effortlessly!',
+  ctaText: 'Book your spa experience today. Your moment of calm is one click away.',
+  footerLine: 'Serving Verrado & Buckeye, AZ · Licensed in Arizona',
+  accentColor: '#d4846a',
+  accentDark: '#b5644a',
+};
+let siteSettings = { ...DEFAULT_SETTINGS };
+
+function slugify(text) {
+  return String(text).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || `svc-${Date.now()}`;
+}
 
 // ══════════════════════════════════════════════
 //  PUBLIC APIs
 // ══════════════════════════════════════════════
 
-// Get services
+// Get services (hidden excluded)
 app.get('/api/services', (req, res) => {
-  res.json(SERVICES);
+  res.json(SERVICES.filter(s => !s.hidden).sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name)));
+});
+
+// Public website content
+app.get('/api/site-settings', (req, res) => {
+  res.json(siteSettings);
 });
 
 // Get available slots for a date — Google Calendar when configured
@@ -92,7 +121,7 @@ app.post('/api/book', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const service = SERVICES.find(s => s.id === serviceId);
+  const service = SERVICES.find(s => s.id === serviceId && !s.hidden);
   if (!service) return res.status(400).json({ error: 'Invalid service' });
 
   if (calendar.configured()) {
@@ -283,6 +312,80 @@ app.post('/api/admin/calendar/block', async (req, res) => {
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }
+});
+
+// ── Services admin (full CRUD) ──
+app.get('/api/admin/services', (req, res) => {
+  if (!authCheck(req, res)) return;
+  res.json([...SERVICES].sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name)));
+});
+
+app.post('/api/admin/services', (req, res) => {
+  if (!authCheck(req, res)) return;
+  const { name, desc, price, image, duration } = req.body;
+  if (!name || !desc || price === undefined || !duration) {
+    return res.status(400).json({ error: 'name, desc, price, and duration are required' });
+  }
+  let id = slugify(req.body.id || name);
+  if (SERVICES.some(s => s.id === id)) id = `${id}-${crypto.randomBytes(3).toString('hex')}`;
+  const sort = SERVICES.length ? Math.max(...SERVICES.map(s => s.sort)) + 1 : 0;
+  const service = { id, name, desc, price: Number(price), image: image || '', duration, sort, hidden: false };
+  SERVICES.push(service);
+  res.status(201).json({ success: true, service });
+});
+
+app.put('/api/admin/services/:id', (req, res) => {
+  if (!authCheck(req, res)) return;
+  const s = SERVICES.find(x => x.id === req.params.id);
+  if (!s) return res.status(404).json({ error: 'Service not found' });
+  ['name', 'desc', 'image', 'duration'].forEach(k => { if (req.body[k] !== undefined) s[k] = req.body[k]; });
+  if (req.body.price !== undefined) s.price = Number(req.body.price);
+  if (req.body.sort !== undefined) s.sort = Number(req.body.sort);
+  if (req.body.hidden !== undefined) s.hidden = !!req.body.hidden;
+  res.json({ success: true, service: s });
+});
+
+app.delete('/api/admin/services/:id', (req, res) => {
+  if (!authCheck(req, res)) return;
+  const idx = SERVICES.findIndex(x => x.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: 'Service not found' });
+  SERVICES.splice(idx, 1);
+  res.json({ success: true, id: req.params.id, message: 'Service deleted' });
+});
+
+app.post('/api/admin/services/restore-defaults', (req, res) => {
+  if (!authCheck(req, res)) return;
+  res.json({ success: true, restored: [] });
+});
+
+// ── Website settings admin ──
+app.put('/api/admin/site-settings', (req, res) => {
+  if (!authCheck(req, res)) return;
+  Object.keys(DEFAULT_SETTINGS).forEach(k => { if (req.body[k] !== undefined) siteSettings[k] = String(req.body[k]); });
+  res.json({ success: true, settings: siteSettings });
+});
+
+app.post('/api/admin/site-settings/reset', (req, res) => {
+  if (!authCheck(req, res)) return;
+  siteSettings = { ...DEFAULT_SETTINGS };
+  res.json({ success: true, settings: siteSettings });
+});
+
+// ── Image upload (local dev: saves to public/uploads) ──
+app.post('/api/admin/upload', (req, res) => {
+  if (!authCheck(req, res)) return;
+  const fs = require('fs');
+  const { filename, contentType, data } = req.body;
+  if (!data || !contentType) return res.status(400).json({ error: 'data and contentType required' });
+  if (!/^image\/(png|jpe?g|webp|gif|avif)$/.test(contentType)) return res.status(400).json({ error: 'Only PNG, JPG, WebP, GIF, or AVIF images are allowed' });
+  const buffer = Buffer.from(data, 'base64');
+  if (buffer.length > 4 * 1024 * 1024) return res.status(400).json({ error: 'Image must be under 4 MB' });
+  const ext = (filename && filename.split('.').pop() || contentType.split('/')[1]).toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+  const dir = path.join(__dirname, 'public', 'uploads');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+  fs.writeFileSync(path.join(dir, file), buffer);
+  res.json({ success: true, url: `/uploads/${file}` });
 });
 
 // Update appointment status

@@ -435,7 +435,7 @@ footer a:hover { color: var(--gold); }
 
 <!-- NAV -->
 <nav id="nav">
-  <div class="nav-logo">Kayci<span>.</span> Sonoran</div>
+  <div class="nav-logo brand-name">Kayci<span>.</span> Sonoran</div>
   <div class="nav-links">
     <a href="#services">Services</a>
     <a href="#about">About</a>
@@ -661,9 +661,9 @@ footer a:hover { color: var(--gold); }
   </svg>
 
   <div class="hero-content">
-    <div class="hero-tag">Verrido · Buckeye, AZ</div>
-    <h1>Kayci Sonoran<br><em>Massage & Therapy</em></h1>
-    <p>Indulge in the ultimate massage experience. Escape the everyday and treat yourself to therapies designed for total relaxation and renewal.</p>
+    <div class="hero-tag" id="hero-tag">Verrido · Buckeye, AZ</div>
+    <h1 id="hero-title">Kayci Sonoran<br><em>Massage & Therapy</em></h1>
+    <p id="hero-subtitle">Indulge in the ultimate massage experience. Escape the everyday and treat yourself to therapies designed for total relaxation and renewal.</p>
     <div class="hero-cta-group">
       <button class="hero-cta" onclick="openBooking()">Book Online</button>
       <a href="#services" class="hero-cta-ghost">Our Services</a>
@@ -688,8 +688,8 @@ footer a:hover { color: var(--gold); }
 <!-- SERVICES -->
 <section class="section" id="services">
   <div class="section-label">Our Services</div>
-  <h2 class="section-title">Step into a world of luxury and serenity</h2>
-  <p class="section-sub">Each treatment blends professional technique with the calming essence of the Sonoran Desert.</p>
+  <h2 class="section-title" id="services-heading">Step into a world of luxury and serenity</h2>
+  <p class="section-sub" id="services-sub">Each treatment blends professional technique with the calming essence of the Sonoran Desert.</p>
   <div class="services-grid" id="services-grid"></div>
 </section>
 
@@ -698,10 +698,12 @@ footer a:hover { color: var(--gold); }
   <div class="about-inner">
     <div class="about-grid">
       <div class="about-text">
-        <div class="section-label" style="text-align:left">Experience the Difference!</div>
-        <h2>A sanctuary rooted in <em>Arizona tradition</em></h2>
+        <div class="section-label" style="text-align:left" id="about-label">Experience the Difference!</div>
+        <h2 id="about-heading">A sanctuary rooted in <em>Arizona tradition</em></h2>
+        <div id="about-text">
         <p>Our practice draws from the healing traditions of the Southwest. From the warmth of sun-baked river stones to the calming scent of desert sage, every detail is designed to reconnect you with the natural rhythm of the land.</p>
         <p>Whether you're recovering from a hike in the White Tank Mountains or decompressing after a long work week, we tailor every session to your body's needs.</p>
+        </div>
       </div>
       <div class="about-features">
         <div class="about-feature">
@@ -780,15 +782,15 @@ footer a:hover { color: var(--gold); }
 
 <!-- CTA BANNER -->
 <section class="cta-banner" id="contact">
-  <h2>Relax Effortlessly!</h2>
-  <p>Book your spa experience today. Your moment of calm is one click away.</p>
+  <h2 id="cta-heading">Relax Effortlessly!</h2>
+  <p id="cta-text">Book your spa experience today. Your moment of calm is one click away.</p>
   <button onclick="openBooking()">Book Your Appointment</button>
 </section>
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-brand">Kayci<span>.</span> Sonoran</div>
-  <p>Serving Verrado & Buckeye, AZ · Licensed in Arizona</p>
+  <div class="footer-brand brand-name">Kayci<span>.</span> Sonoran</div>
+  <p id="footer-line">Serving Verrado & Buckeye, AZ · Licensed in Arizona</p>
   <br>
   <a href="#services">Services</a>
   <a href="#about">About</a>
@@ -1218,8 +1220,55 @@ async function submitBooking() {
   }, 100);
 }
 
+// ── Site settings — text & accent color managed from the admin portal ──
+async function applySiteSettings() {
+  let s;
+  try {
+    const res = await fetch(`${API_BASE}/api/site-settings`);
+    if (!res.ok) return;
+    s = await res.json();
+  } catch (e) { return; } // API down — keep the baked-in copy
+
+  const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  if (s.accentColor) {
+    document.documentElement.style.setProperty('--primary', s.accentColor);
+    if (s.accentDark) document.documentElement.style.setProperty('--primary-dark', s.accentDark);
+  }
+  if (s.businessName) {
+    document.querySelectorAll('.brand-name').forEach(el => {
+      const words = esc(s.businessName).trim().split(/\s+/);
+      const last = words.pop() || '';
+      el.innerHTML = `${words.join(' ')} <span>${last}</span>`.trim();
+    });
+    document.title = `${s.businessName} — Arizona's Premier Massage Therapy`;
+  }
+  const setText = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+  setText('hero-tag', s.heroTag);
+  const heroEl = document.getElementById('hero-title');
+  if (heroEl && s.heroTitle) {
+    // 'First line|Second line' renders with the second line highlighted
+    const [line1, line2] = String(s.heroTitle).split('|');
+    heroEl.innerHTML = esc(line1) + (line2 ? `<br><em>${esc(line2)}</em>` : '');
+  }
+  setText('hero-subtitle', s.heroSubtitle);
+  setText('services-heading', s.servicesHeading);
+  setText('services-sub', s.servicesSub);
+  setText('about-label', s.aboutLabel);
+  const aboutH = document.getElementById('about-heading');
+  if (aboutH && s.aboutHeading) aboutH.innerHTML = esc(s.aboutHeading);
+  const aboutT = document.getElementById('about-text');
+  if (aboutT && s.aboutText) {
+    aboutT.innerHTML = String(s.aboutText).split(/\n\s*\n/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
+  }
+  setText('cta-heading', s.ctaHeading);
+  setText('cta-text', s.ctaText);
+  setText('footer-line', s.footerLine);
+}
+
 // ── Init ──
 loadServices();
+applySiteSettings();
 </script>
 </body>
 </html>

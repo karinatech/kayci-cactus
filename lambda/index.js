@@ -1,5 +1,6 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, QueryCommand, ScanCommand, GetCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const calendar = require('./googleCalendar');
@@ -7,6 +8,9 @@ const calendar = require('./googleCalendar');
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.DDB_TABLE || 'kayci-cactus-data';
+
+const s3Client = new S3Client({});
+const UPLOAD_BUCKET = process.env.UPLOAD_BUCKET || '';
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'saguaro2024';
 const SPECIALIST_EMAIL = process.env.SPECIALIST_EMAIL || 'specialist@example.com';
@@ -24,24 +28,97 @@ const DEFAULT_SERVICES = [
   { id: 'migraine-relief', name: 'Migraine Relief Massage',  duration: '45 min', price:  95, desc: 'Targeted head, neck, and shoulder massage to ease tension headaches and migraines.', image: 'https://images.pexels.com/photos/3998013/pexels-photo-3998013.jpeg?auto=compress&cs=tinysrgb&w=600' },
 ];
 
-// ── Get services: read from DynamoDB if available, fall back to defaults ──
+// ── Site settings shown on the public homepage; overridable from the admin portal ──
+const DEFAULT_SETTINGS = {
+  businessName: 'Kayci Sonoran',
+  heroTag: 'Verrido · Buckeye, AZ',
+  heroTitle: 'Kayci Sonoran|Massage & Therapy',
+  heroSubtitle: 'Indulge in the ultimate massage experience. Escape the everyday and treat yourself to therapies designed for total relaxation and renewal.',
+  servicesHeading: 'Step into a world of luxury and serenity',
+  servicesSub: 'Each treatment blends professional technique with the calming essence of the Sonoran Desert.',
+  aboutLabel: 'Experience the Difference!',
+  aboutHeading: 'A sanctuary rooted in Arizona tradition',
+  aboutText: "Our practice draws from the healing traditions of the Southwest. From the warmth of sun-baked river stones to the calming scent of desert sage, every detail is designed to reconnect you with the natural rhythm of the land.\n\nWhether you're recovering from a hike in the White Tank Mountains or decompressing after a long work week, we tailor every session to your body's needs.",
+  ctaHeading: 'Relax Effortlessly!',
+  ctaText: 'Book your spa experience today. Your moment of calm is one click away.',
+  footerLine: 'Serving Verrado & Buckeye, AZ · Licensed in Arizona',
+  accentColor: '#d4846a',
+  accentDark: '#b5644a',
+};
+
+// ── Services: DynamoDB is the single source of truth after first seed ──
+async function putItem(item) {
+  await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
+}
+
+async function scanByType(type) {
+  const result = await docClient.send(new ScanCommand({
+    TableName: TABLE_NAME,
+    FilterExpression: '#type = :type',
+    ExpressionAttributeNames: { '#type': 'type' },
+    ExpressionAttributeValues: { ':type': type },
+  }));
+  return result.Items || [];
+}
+
+function normalizeService(item) {
+  return {
+    id: item.serviceId || (item.id || '').replace(/^service_/, ''),
+    name: item.name, duration: item.duration, price: item.price,
+    desc: item.desc, image: item.image,
+    sort: item.sort === undefined ? 999 : item.sort,
+    hidden: !!item.hidden,
+  };
+}
+
+// Reads services from DynamoDB. On first run (or when the catalog is a legacy
+// partial override set), seeds the full default catalog exactly once so the
+// table always holds the complete list — add/edit/delete never duplicate rows.
 async function getServices() {
   try {
     const items = await scanByType('service');
-    if (items.length > 0) {
-      // Merge: start with defaults, override with stored values
-      const stored = {};
-      items.forEach(s => {
-        stored[s.serviceId || s.id] = s;
-        if (s.id) stored[s.id] = s;
-      });
-      return DEFAULT_SERVICES.map(d => {
-        const s = stored[d.id] || stored[`service_${d.id}`];
-        return s ? { id: d.id, name: s.name, duration: s.duration, price: s.price, desc: s.desc, image: s.image } : d;
-      });
+    const stored = items.map(normalizeService).filter(s => s.id && s.name);
+    const storedIds = new Set(stored.map(s => s.id));
+    const missing = DEFAULT_SERVICES.filter(d => !storedIds.has(d.id));
+
+    if (stored.length === 0) {
+      // Fresh table — seed everything
+      for (let i = 0; i < DEFAULT_SERVICES.length; i++) {
+        const d = DEFAULT_SERVICES[i];
+        await putItem({ id: `service_${d.id}`, type: 'service', serviceId: d.id, ...d, sort: i, hidden: false, updatedAt: new Date().toISOString() });
+      }
+      return DEFAULT_SERVICES.map((d, i) => ({ ...d, sort: i, hidden: false }));
     }
-  } catch (e) { console.log('getServices fallback:', e.message); }
-  return DEFAULT_SERVICES;
+    // Re-read not needed; merge in-memory
+    const merged = [...stored];
+    if (missing.length > 0) {
+      // Legacy override-only rows exist — backfill the defaults that were never
+      // edited so the table holds the full catalog from now on.
+      const seedAll = await getSetting('service_catalog_seeded');
+      if (!seedAll) {
+        for (const d of missing) {
+          const i = DEFAULT_SERVICES.findIndex(x => x.id === d.id);
+          await putItem({ id: `service_${d.id}`, type: 'service', serviceId: d.id, ...d, sort: 500 + i, hidden: false, updatedAt: new Date().toISOString() });
+          merged.push({ ...d, sort: 500 + i, hidden: false });
+        }
+        await putItem({ id: 'setting_service_catalog_seeded', type: 'setting', key: 'service_catalog_seeded', value: true, updatedAt: new Date().toISOString() });
+      }
+    }
+    merged.sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name));
+    return merged;
+  } catch (e) {
+    console.log('getServices fallback:', e.message);
+    return DEFAULT_SERVICES.map((d, i) => ({ ...d, sort: i, hidden: false }));
+  }
+}
+
+async function getServiceRow(serviceId) {
+  return await getItem(`service_${serviceId}`);
+}
+
+async function getSetting(key) {
+  const item = await getItem(`setting_${key}`);
+  return item ? item.value : undefined;
 }
 
 const transporter = nodemailer.createTransport({
@@ -57,7 +134,7 @@ function response(statusCode, body) {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-      'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     },
     body: JSON.stringify(body),
   };
@@ -68,27 +145,16 @@ function parseEvent(event) {
   const method = event.httpMethod || event.requestContext?.http?.method || 'GET';
   const path = event.path || event.requestContext?.http?.path || '/';
   const pathParts = path.split('/').filter(Boolean);
-  const body = event.body ? (typeof event.body === 'string' ? JSON.parse(event.body) : event.body) : {};
+  let body = {};
+  if (event.body) {
+    const raw = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body;
+    body = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  }
   const headers = event.headers || {};
   const authHeader = headers.Authorization || headers.authorization || '';
   const token = authHeader.replace('Bearer ', '');
   const queryParams = event.queryStringParameters || {};
   return { method, path, pathParts, body, headers, token, queryParams };
-}
-
-// ── DynamoDB helpers ──
-async function putItem(item) {
-  await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
-}
-
-async function scanByType(type) {
-  const result = await docClient.send(new ScanCommand({
-    TableName: TABLE_NAME,
-    FilterExpression: '#type = :type',
-    ExpressionAttributeNames: { '#type': 'type' },
-    ExpressionAttributeValues: { ':type': type },
-  }));
-  return result.Items || [];
 }
 
 async function getItem(id) {
@@ -128,6 +194,11 @@ async function sendEmail(to, subject, html) {
   }
 }
 
+// ── Slug helper for new services ──
+function slugify(text) {
+  return String(text).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || `svc-${Date.now()}`;
+}
+
 // ── Route handler ──
 async function handleRequest(event) {
   const { method, pathParts, body, token, queryParams } = parseEvent(event);
@@ -135,10 +206,16 @@ async function handleRequest(event) {
   // CORS preflight
   if (method === 'OPTIONS') return response(200, {});
 
-  // Route: /api/services
+  // Route: /api/services  (public — hidden services excluded)
   if (pathParts[0] === 'api' && pathParts[1] === 'services' && method === 'GET') {
-    const services = await getServices();
+    const services = (await getServices()).filter(s => !s.hidden);
     return response(200, services);
+  }
+
+  // Route: /api/site-settings (public)
+  if (pathParts[0] === 'api' && pathParts[1] === 'site-settings' && method === 'GET') {
+    const stored = await getSetting('site_settings') || {};
+    return response(200, { ...DEFAULT_SETTINGS, ...stored });
   }
 
   // Route: /api/slots/:date
@@ -165,7 +242,7 @@ async function handleRequest(event) {
   if (pathParts[0] === 'api' && pathParts[1] === 'book' && method === 'POST') {
     const { name, email, phone, serviceId, date, time, notes } = body;
     if (!name || !email || !serviceId || !date || !time) return response(400, { error: 'Missing required fields' });
-    const catalog = await getServices();
+    const catalog = (await getServices()).filter(s => !s.hidden);
     const service = catalog.find(s => s.id === serviceId);
     if (!service) return response(400, { error: 'Invalid service' });
 
@@ -364,33 +441,125 @@ async function handleRequest(event) {
     return response(200, { success: true, date });
   }
 
-  // Route: /api/admin/services (GET) — get all services with edit capability
+  // ── Services admin (full CRUD — DynamoDB is the single source of truth) ──
+
+  // Route: /api/admin/services (GET) — includes hidden services for admin
   if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'services' && !pathParts[3] && method === 'GET') {
     if (!authed()) return response(401, { error: 'Unauthorized' });
     const services = await getServices();
     return response(200, services);
   }
 
-  // Route: /api/admin/services/:id (PUT) — update a service's name, desc, price, image, duration
+  // Route: /api/admin/services (POST) — create a brand-new service
+  if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'services' && !pathParts[3] && method === 'POST') {
+    if (!authed()) return response(401, { error: 'Unauthorized' });
+    const { name, desc, price, image, duration } = body;
+    if (!name || !desc || price === undefined || !duration) {
+      return response(400, { error: 'name, desc, price, and duration are required' });
+    }
+    let serviceId = slugify(body.id || name);
+    // Guarantee uniqueness — never overwrite an existing service
+    if (await getServiceRow(serviceId)) {
+      serviceId = `${serviceId}-${crypto.randomBytes(3).toString('hex')}`;
+    }
+    const existing = await getServices();
+    const sort = existing.length ? Math.max(...existing.map(s => s.sort)) + 1 : 0;
+    const item = {
+      id: `service_${serviceId}`, type: 'service', serviceId,
+      name, desc, price: Number(price), image: image || '', duration,
+      sort, hidden: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    await putItem(item);
+    return response(201, { success: true, service: { id: serviceId, name, desc, price: Number(price), image, duration, sort, hidden: false } });
+  }
+
+  // Route: /api/admin/services/:id (PUT) — update a service's name, desc, price, image, duration, sort, hidden
   if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'services' && pathParts[3] && method === 'PUT') {
     if (!authed()) return response(401, { error: 'Unauthorized' });
     const serviceId = pathParts[3];
-    const { name, desc, price, image, duration } = body;
-    if (!name || !desc || price === undefined || !image || !duration) {
-      return response(400, { error: 'name, desc, price, image, and duration are required' });
-    }
-    const id = `service_${serviceId}`;
-    await putItem({ id, type: 'service', serviceId, name, desc, price: Number(price), image, duration, updatedAt: new Date().toISOString() });
-    return response(200, { success: true, id: serviceId, name, desc, price: Number(price), image, duration });
+    const existing = await getServiceRow(serviceId);
+    if (!existing) return response(404, { error: 'Service not found' });
+    const merged = {
+      id: `service_${serviceId}`, type: 'service', serviceId,
+      name: body.name !== undefined ? body.name : existing.name,
+      desc: body.desc !== undefined ? body.desc : existing.desc,
+      price: body.price !== undefined ? Number(body.price) : existing.price,
+      image: body.image !== undefined ? body.image : existing.image,
+      duration: body.duration !== undefined ? body.duration : existing.duration,
+      sort: body.sort !== undefined ? Number(body.sort) : (existing.sort === undefined ? 999 : existing.sort),
+      hidden: body.hidden !== undefined ? !!body.hidden : !!existing.hidden,
+      createdAt: existing.createdAt,
+      updatedAt: new Date().toISOString(),
+    };
+    await putItem(merged);
+    return response(200, { success: true, service: normalizeService(merged) });
   }
 
-  // Route: /api/admin/services/:id (DELETE) — reset a service to default
+  // Route: /api/admin/services/:id (DELETE) — permanently remove a service
   if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'services' && pathParts[3] && method === 'DELETE') {
     if (!authed()) return response(401, { error: 'Unauthorized' });
     const serviceId = pathParts[3];
     const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
     await docClient.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { id: `service_${serviceId}` } }));
-    return response(200, { success: true, id: serviceId, message: 'Reset to default' });
+    return response(200, { success: true, id: serviceId, message: 'Service deleted' });
+  }
+
+  // Route: /api/admin/services/restore-defaults (POST) — re-add any deleted default services
+  if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'services' && pathParts[3] === 'restore-defaults' && method === 'POST') {
+    if (!authed()) return response(401, { error: 'Unauthorized' });
+    const existing = await getServices();
+    const existingIds = new Set(existing.map(s => s.id));
+    let maxSort = existing.length ? Math.max(...existing.map(s => s.sort)) : 0;
+    const restored = [];
+    for (const d of DEFAULT_SERVICES) {
+      if (!existingIds.has(d.id)) {
+        maxSort += 1;
+        await putItem({ id: `service_${d.id}`, type: 'service', serviceId: d.id, ...d, sort: maxSort, hidden: false, updatedAt: new Date().toISOString() });
+        restored.push(d.id);
+      }
+    }
+    return response(200, { success: true, restored });
+  }
+
+  // ── Site settings admin ──
+
+  // Route: /api/admin/site-settings (PUT) — merge and save homepage content
+  if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'site-settings' && method === 'PUT') {
+    if (!authed()) return response(401, { error: 'Unauthorized' });
+    const current = await getSetting('site_settings') || {};
+    const allowed = Object.keys(DEFAULT_SETTINGS);
+    const next = { ...current };
+    allowed.forEach(k => { if (body[k] !== undefined) next[k] = String(body[k]); });
+    await putItem({ id: 'setting_site_settings', type: 'setting', key: 'site_settings', value: next, updatedAt: new Date().toISOString() });
+    return response(200, { success: true, settings: { ...DEFAULT_SETTINGS, ...next } });
+  }
+
+  // Route: /api/admin/site-settings/reset (POST)
+  if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'site-settings' && pathParts[3] === 'reset' && method === 'POST') {
+    if (!authed()) return response(401, { error: 'Unauthorized' });
+    const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+    await docClient.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { id: 'setting_site_settings' } }));
+    return response(200, { success: true, settings: DEFAULT_SETTINGS });
+  }
+
+  // ── Image upload (stores to S3 media bucket, returns public URL) ──
+  if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'upload' && method === 'POST') {
+    if (!authed()) return response(401, { error: 'Unauthorized' });
+    if (!UPLOAD_BUCKET) return response(400, { error: 'Image uploads are not configured yet. Redeploy the CloudFormation stack to add the media bucket.' });
+    const { filename, contentType, data } = body;
+    if (!data || !contentType) return response(400, { error: 'data and contentType required' });
+    if (!/^image\/(png|jpe?g|webp|gif|avif)$/.test(contentType)) return response(400, { error: 'Only PNG, JPG, WebP, GIF, or AVIF images are allowed' });
+    const buffer = Buffer.from(data, 'base64');
+    if (buffer.length > 4 * 1024 * 1024) return response(400, { error: 'Image must be under 4 MB' });
+    const ext = (filename && filename.split('.').pop() || contentType.split('/')[1]).toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+    const key = `uploads/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: UPLOAD_BUCKET, Key: key, Body: buffer,
+      ContentType: contentType, CacheControl: 'public, max-age=31536000',
+    }));
+    const region = process.env.AWS_REGION || 'us-east-1';
+    const url = `https://${UPLOAD_BUCKET}.s3.${region}.amazonaws.com/${key}`;
+    return response(200, { success: true, url });
   }
 
   // Route: /api/admin/waitlist (GET)
