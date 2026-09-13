@@ -603,16 +603,22 @@ async function handleRequest(event) {
     const service = entry.serviceId ? catalog.find(s => s.id === entry.serviceId) : catalog[0];
     if (calendar.configured()) {
       if (!time) return response(400, { error: 'Time slot required' });
-      const appointment = await calendar.createBooking({
-        name: entry.name,
-        email: entry.email,
-        phone: entry.phone,
-        address: entry.address || '',
-        service: service ? { ...service, duration: '60 min', price: tierFor(60).price } : { id: 'custom', name: entry.serviceName, duration: '60 min', price: tierFor(60).price },
-        date: entry.date,
-        time,
-        notes: entry.notes,
-      });
+      let appointment;
+      try {
+        appointment = await calendar.createBooking({
+          name: entry.name,
+          email: entry.email,
+          phone: entry.phone,
+          address: entry.address || '',
+          service: service ? { ...service, duration: '60 min', price: tierFor(60).price } : { id: 'custom', name: entry.serviceName, duration: '60 min', price: tierFor(60).price },
+          date: entry.date,
+          time,
+          notes: entry.notes,
+        });
+      } catch (err) {
+        console.log('waitlist confirm createBooking failed:', err.message);
+        return response(err.status || 500, { error: err.message || 'Could not create calendar event' });
+      }
       await updateItem(entry.id, { status: 'confirmed', appointmentId: appointment.id });
       await sendEmail(entry.email, `Good news! A slot opened up — ${entry.date}`,
         `<h2>Great news, ${entry.name}!</h2><p>A slot has opened up and we'd love to see you.</p>

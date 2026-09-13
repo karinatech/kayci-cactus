@@ -10,16 +10,17 @@ const TZ_OFFSET = _tzm(TZ_OFF_RAW);
 const BUFFER_MIN = Number(process.env.GOOGLE_BUFFER_MINUTES || 15);
 const SLOT_STEP_MIN = Number(process.env.GOOGLE_SLOT_STEP_MINUTES || 30);
 
-// Default studio hours in America/Phoenix. Override with GOOGLE_WORKING_HOURS JSON.
-// Keys are JS weekday numbers: 0=Sun … 6=Sat. null = closed.
+// Default availability in America/Phoenix. Every day is open 9:00–19:00 unless
+// Kayci blocks the date/time herself (Google Calendar busy events or admin blocks all close slots).
+// Override with GOOGLE_WORKING_HOURS JSON if narrower defaults are ever wanted.
 const DEFAULT_HOURS = {
-  0: null,
-  1: ['09:00', '18:00'],
-  2: ['09:00', '18:00'],
-  3: ['09:00', '18:00'],
-  4: ['09:00', '18:00'],
-  5: ['09:00', '18:00'],
-  6: ['09:00', '16:00'],
+  0: ['09:00', '19:00'],
+  1: ['09:00', '19:00'],
+  2: ['09:00', '19:00'],
+  3: ['09:00', '19:00'],
+  4: ['09:00', '19:00'],
+  5: ['09:00', '19:00'],
+  6: ['09:00', '19:00'],
 };
 
 function authMode() {
