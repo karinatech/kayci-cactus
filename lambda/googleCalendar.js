@@ -368,20 +368,21 @@ async function blockTime({ date, startTime, endTime, reason }) {
   }
   const start = phoenixDateTime(date, startTime);
   const end = phoenixDateTime(date, endTime || addMinutes(startTime, 60));
+  const eventBody = {
+    summary: reason ? `Blocked — ${reason}` : 'Blocked',
+    description: 'Blocked from Kayci Cactus admin',
+    start: { dateTime: start, timeZone: TIMEZONE },
+    end: { dateTime: end, timeZone: TIMEZONE },
+    transparency: 'opaque',
+    colorId: '8',
+    extendedProperties: { private: { source: 'kayci-cactus', type: 'block' } },
+  };
+  // Debug: log exactly what we send (calendar id + body) to diagnose 400s.
+  console.log('blockTime request body:', JSON.stringify(eventBody));
+  console.log(`blockTime target calendar: ${JSON.stringify(bookingCalendarId())} tz=${JSON.stringify(TIMEZONE)} offset=${JSON.stringify(TZ_OFFSET)}`);
   const created = await gfetch(
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(bookingCalendarId())}/events`,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        summary: reason ? `Blocked — ${reason}` : 'Blocked',
-        description: 'Blocked from Kayci Cactus admin',
-        start: { dateTime: start, timeZone: TIMEZONE },
-        end: { dateTime: end, timeZone: TIMEZONE },
-        transparency: 'opaque',
-        colorId: '8',
-        extendedProperties: { private: { source: 'kayci-cactus', type: 'block' } },
-      }),
-    }
+    { method: 'POST', body: JSON.stringify(eventBody) }
   );
   return eventToAppointment(created);
 }
