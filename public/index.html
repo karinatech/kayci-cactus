@@ -1070,7 +1070,7 @@ function goToStep(step) {
 }
 
 // ── Load available time slots — now driven by admin-set availability ──
-async async function loadSlots() {
+async function loadSlots() {
   selectedDate = document.getElementById('booking-date').value;
   if (!selectedDate) return;
 
