@@ -323,7 +323,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
           <div>
             <h3 style="margin-bottom:0.2rem;">Manage Services</h3>
-            <p style="color:var(--ink-soft);font-size:0.9rem;margin:0;">Add, edit, reorder, hide, or delete services. Changes appear instantly on the website.</p>
+            <p style="color:var(--ink-soft);font-size:0.9rem;margin:0;">Add, edit, reorder, hide, or delete services. Changes appear instantly on the website.<br>Session pricing is the same for every service: <strong>60 min $120 · 90 min $160 · 120 min $200</strong> — clients pick a length when booking.</p>
           </div>
           <div style="display:flex;gap:0.6rem;">
             <button class="filter-btn" onclick="restoreDefaultServices()">Restore deleted defaults</button>
@@ -335,10 +335,6 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
             <div><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Service Name *</label>
               <input type="text" id="new-svc-name" placeholder="e.g. Hot Bamboo Fusion" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);"></div>
-            <div><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Price ($) *</label>
-              <input type="number" id="new-svc-price" placeholder="120" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);"></div>
-            <div><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Duration *</label>
-              <input type="text" id="new-svc-duration" placeholder="60 min" style="width:100%;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);"></div>
             <div><label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:0.3rem;">Image</label>
               <div style="display:flex;gap:0.5rem;">
                 <input type="text" id="new-svc-image" placeholder="Paste image URL or upload →" style="flex:1;padding:0.6rem 0.8rem;border:1px solid var(--border);font-size:0.9rem;font-family:inherit;background:var(--bg-card);color:var(--ink);">
@@ -976,7 +972,7 @@ function renderServicesAdmin() {
         <div style="width:100px;height:100px;flex-shrink:0;background:var(--border) url('${s.image}') center/cover;" id="img-preview-${s.id}"></div>
         <div style="flex:1;padding:1rem 1.2rem;min-width:0;">
           <div style="font-family:'Fraunces',serif;font-size:1.05rem;font-weight:600;margin-bottom:0.2rem;">${escAttr(s.name)} ${s.hidden ? '<span class=\"svc-hidden-badge\">Hidden</span>' : ''}</div>
-          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.2rem;">${s.duration} · $${s.price}</div>
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.2rem;">${s.duration} · from $${s.price}</div>
           <div style="font-size:0.85rem;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escAttr(s.desc)}</div>
         </div>
         <div class="svc-actions">
@@ -992,14 +988,6 @@ function renderServicesAdmin() {
           <div>
             <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Service Name</label>
             <input type="text" id="svc-name-${s.id}" value="${escAttr(s.name)}" style="${inputStyle}">
-          </div>
-          <div>
-            <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Price ($)</label>
-            <input type="number" id="svc-price-${s.id}" value="${s.price}" style="${inputStyle}">
-          </div>
-          <div>
-            <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Duration</label>
-            <input type="text" id="svc-duration-${s.id}" value="${escAttr(s.duration)}" style="${inputStyle}">
           </div>
           <div>
             <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;display:block;">Image</label>
@@ -1030,19 +1018,17 @@ function toggleAddService() {
 async function createService() {
   const name = document.getElementById('new-svc-name').value.trim();
   const desc = document.getElementById('new-svc-desc').value.trim();
-  const price = document.getElementById('new-svc-price').value;
-  const duration = document.getElementById('new-svc-duration').value.trim();
   const image = document.getElementById('new-svc-image').value.trim();
-  if (!name || !desc || !price || !duration) { alert('Name, description, price, and duration are required.'); return; }
+  if (!name || !desc) { alert('Name and description are required.'); return; }
   try {
     const res = await fetch(`${API_BASE}/api/admin/services`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-      body: JSON.stringify({ name, desc, price: Number(price), image, duration })
+      body: JSON.stringify({ name, desc, image })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { alert(`Failed to create: ${data.error || res.statusText}`); return; }
-    ['new-svc-name','new-svc-desc','new-svc-price','new-svc-duration','new-svc-image'].forEach(id => document.getElementById(id).value = '');
+    ['new-svc-name','new-svc-desc','new-svc-image'].forEach(id => document.getElementById(id).value = '');
     toggleAddService();
     await loadServicesAdmin();
     renderServicesAdmin();
@@ -1210,19 +1196,17 @@ function cancelEdit(id) {
 async function saveService(id) {
   const name = document.getElementById(`svc-name-${id}`).value.trim();
   const desc = document.getElementById(`svc-desc-${id}`).value.trim();
-  const price = document.getElementById(`svc-price-${id}`).value;
   const image = document.getElementById(`svc-image-${id}`).value.trim();
-  const duration = document.getElementById(`svc-duration-${id}`).value.trim();
 
-  if (!name || !desc || !price || !image || !duration) {
-    alert('All fields are required.'); return;
+  if (!name || !desc) {
+    alert('Name and description are required.'); return;
   }
 
   try {
     const res = await fetch(`${API_BASE}/api/admin/services/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-      body: JSON.stringify({ name, desc, price: Number(price), image, duration })
+      body: JSON.stringify({ name, desc, image })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -1230,7 +1214,7 @@ async function saveService(id) {
     }
     // Update local data
     const idx = servicesAdminData.findIndex(s => s.id === id);
-    if (idx >= 0) { servicesAdminData[idx] = { ...servicesAdminData[idx], name, desc, price: Number(price), image, duration }; }
+    if (idx >= 0) { servicesAdminData[idx] = { ...servicesAdminData[idx], name, desc, image }; }
     renderServicesAdmin();
     showToast(`Service "${name}" saved`);
   } catch (e) {

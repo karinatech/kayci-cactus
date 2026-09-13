@@ -43,6 +43,15 @@ const SERVICES = [
 ];
 SERVICES.forEach((s, i) => { s.sort = i; s.hidden = false; });
 
+// Session length pricing — same tiers for every service
+const DURATION_TIERS = [
+  { minutes: 60,  price: 120 },
+  { minutes: 90,  price: 160 },
+  { minutes: 120, price: 200 },
+];
+const tierFor = (minutes) => DURATION_TIERS.find(t => t.minutes === Number(minutes)) || null;
+const withTierPricing = (s) => ({ ...s, duration: '60–120 min', price: DURATION_TIERS[0].price, tiers: DURATION_TIERS });
+
 // ── Site settings (local dev: in-memory copy; production: DynamoDB) ──
 const DEFAULT_SETTINGS = {
   businessName: 'Kayci Sonoran',
@@ -72,7 +81,7 @@ function slugify(text) {
 
 // Get services (hidden excluded)
 app.get('/api/services', (req, res) => {
-  res.json(SERVICES.filter(s => !s.hidden).sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name)));
+  res.json(SERVICES.filter(s => !s.hidden).sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name)).map(withTierPricing));
 });
 
 // Public website content
@@ -86,9 +95,9 @@ app.get('/api/slots/:date', async (req, res) => {
   const serviceId = req.query.serviceId;
   try {
     if (calendar.configured()) {
-      const service = SERVICES.find(s => s.id === serviceId);
-      const duration = calendar.parseDurationMinutes(service ? service.duration : 60);
-      return res.json(await calendar.getAvailableSlots(date, duration));
+      const tier = tierFor(req.query.durationMin || 60);
+      if (!tier) return res.status(400).json({ error: 'durationMin must be one of: ' + DURATION_TIERS.map(t => t.minutes).join(', ') });
+      return res.json(await calendar.getAvailableSlots(date, tier.minutes));
     }
     const openSlots = availability[date] || [];
     const bookedTimes = appointments
@@ -121,8 +130,11 @@ app.post('/api/book', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const service = SERVICES.find(s => s.id === serviceId && !s.hidden);
-  if (!service) return res.status(400).json({ error: 'Invalid service' });
+  const tier = tierFor(req.body.durationMin || 60);
+  if (!tier) return res.status(400).json({ error: 'durationMin must be one of: ' + DURATION_TIERS.map(t => t.minutes).join(', ') });
+  const found2 = SERVICES.find(s => s.id === serviceId && !s.hidden);
+  if (!found2) return res.status(400).json({ error: 'Invalid service' });
+  const service = { ...found2, duration: `${tier.minutes} min`, price: tier.price };
 
   if (calendar.configured()) {
     try {
@@ -317,19 +329,19 @@ app.post('/api/admin/calendar/block', async (req, res) => {
 // ── Services admin (full CRUD) ──
 app.get('/api/admin/services', (req, res) => {
   if (!authCheck(req, res)) return;
-  res.json([...SERVICES].sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name)));
+  res.json([...SERVICES].sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name)).map(withTierPricing));
 });
 
 app.post('/api/admin/services', (req, res) => {
   if (!authCheck(req, res)) return;
-  const { name, desc, price, image, duration } = req.body;
-  if (!name || !desc || price === undefined || !duration) {
-    return res.status(400).json({ error: 'name, desc, price, and duration are required' });
+  const { name, desc, image } = req.body;
+  if (!name || !desc) {
+    return res.status(400).json({ error: 'name and desc are required' });
   }
   let id = slugify(req.body.id || name);
   if (SERVICES.some(s => s.id === id)) id = `${id}-${crypto.randomBytes(3).toString('hex')}`;
   const sort = SERVICES.length ? Math.max(...SERVICES.map(s => s.sort)) + 1 : 0;
-  const service = { id, name, desc, price: Number(price), image: image || '', duration, sort, hidden: false };
+  const service = { id, name, desc, image: image || '', sort, hidden: false };
   SERVICES.push(service);
   res.status(201).json({ success: true, service });
 });
@@ -338,8 +350,7 @@ app.put('/api/admin/services/:id', (req, res) => {
   if (!authCheck(req, res)) return;
   const s = SERVICES.find(x => x.id === req.params.id);
   if (!s) return res.status(404).json({ error: 'Service not found' });
-  ['name', 'desc', 'image', 'duration'].forEach(k => { if (req.body[k] !== undefined) s[k] = req.body[k]; });
-  if (req.body.price !== undefined) s.price = Number(req.body.price);
+  ['name', 'desc', 'image'].forEach(k => { if (req.body[k] !== undefined) s[k] = req.body[k]; });
   if (req.body.sort !== undefined) s.sort = Number(req.body.sort);
   if (req.body.hidden !== undefined) s.hidden = !!req.body.hidden;
   res.json({ success: true, service: s });

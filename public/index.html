@@ -309,6 +309,14 @@ nav.scrolled { box-shadow: var(--shadow); }
 .service-option-info h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-dark); }
 .service-option-info p { font-size: 0.8rem; color: var(--text); margin: 0; }
 .service-option-price { font-family: 'Marcellus', serif; font-size: 1.3rem; color: var(--primary); font-weight: 400; }
+.service-price.from { font-size: 1.2rem; }
+.service-price.from .from-label { font-size: 0.8rem; color: var(--text); font-family: 'DM Sans', sans-serif; }
+.dur-picker { display: flex; gap: 0.6rem; margin-top: 1rem; }
+.dur-opt { flex: 1; padding: 0.7rem 0.4rem; border: 2px solid var(--border); background: var(--bg); cursor: pointer; text-align: center; transition: 0.2s; border-radius: 10px; }
+.dur-opt:hover { border-color: var(--primary); }
+.dur-opt.selected { border-color: var(--primary); background: rgba(212, 132, 106, 0.08); }
+.dur-opt-time { font-weight: 600; color: var(--text-dark); font-size: 0.95rem; }
+.dur-opt-price { color: var(--primary); font-family: 'Marcellus', serif; font-size: 1.05rem; }
 
 /* Date / Time */
 .date-picker { margin-bottom: 1.5rem; }
@@ -818,6 +826,10 @@ footer a:hover { color: var(--gold); }
       <div class="step-content active" id="step-1">
         <p style="color:var(--text);margin-bottom:1.2rem;font-size:0.95rem">Select your massage service:</p>
         <div id="service-options"></div>
+        <div id="duration-picker-wrap" style="display:none">
+          <p style="color:var(--text);margin:1.2rem 0 0.2rem;font-size:0.95rem">Select your session length:</p>
+          <div class="dur-picker" id="duration-picker"></div>
+        </div>
         <div class="btn-group">
           <div style="flex:1"></div>
           <button class="btn-next" id="step1-next" onclick="goToStep(2)" disabled>Select Date & Time →</button>
@@ -937,6 +949,29 @@ let selectedDate = null;
 let selectedTime = null;
 let currentStep = 1;
 let services = [];
+let selectedDuration = 60;
+
+// Session length pricing — same tiers for every service
+const DURATION_TIERS = [
+  { minutes: 60,  price: 120 },
+  { minutes: 90,  price: 160 },
+  { minutes: 120, price: 200 },
+];
+const tierFor = (m) => DURATION_TIERS.find(t => t.minutes === Number(m)) || DURATION_TIERS[0];
+
+function renderDurationPicker() {
+  document.getElementById('duration-picker').innerHTML = DURATION_TIERS.map(t => `
+    <div class="dur-opt ${t.minutes === selectedDuration ? 'selected' : ''}" onclick="selectDuration(${t.minutes})">
+      <div class="dur-opt-time">${t.minutes} min</div>
+      <div class="dur-opt-price">$${t.price}</div>
+    </div>
+  `).join('');
+}
+
+function selectDuration(minutes) {
+  selectedDuration = minutes;
+  renderDurationPicker();
+}
 
 // ── Nav scroll effect ──
 window.addEventListener('scroll', () => {
@@ -957,13 +992,13 @@ async function loadServices() {
   } catch (e) {
     // Fallback if server not running
     services = [
-      { id: 'desert-stone', name: 'Desert Stone Massage', duration: '75 min', price: 135, desc: 'Heated Arizona river stones melt tension from deep within.', image: 'https://images.pexels.com/photos/3997989/pexels-photo-3997989.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { id: 'sonoran-deep', name: 'Sonoran Deep Tissue', duration: '60 min', price: 115, desc: 'Targeted deep-tissue work with locally sourced sage oil.', image: 'https://images.pexels.com/photos/3998037/pexels-photo-3998037.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { id: 'sunset-relax', name: 'Sunset Relaxation', duration: '50 min', price: 95, desc: 'Gentle, flowing strokes paired with desert botanical aromatherapy.', image: 'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { id: 'monsoon-recovery', name: 'Monsoon Recovery Sports', duration: '60 min', price: 125, desc: 'Athletic recovery massage focusing on overworked muscles.', image: 'https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { id: 'palosanto', name: 'Palo Santo Energy Ritual', duration: '45 min', price: 85, desc: 'Energy balancing with palo santo and crystal sound therapy.', image: 'https://images.pexels.com/photos/6198027/pexels-photo-6198027.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { id: 'cactus-cupping', name: 'Cactus Flower Cupping', duration: '50 min', price: 110, desc: 'Modern cupping therapy to improve circulation and release fascia.', image: 'https://images.pexels.com/photos/6663584/pexels-photo-6663584.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { id: 'migraine-relief', name: 'Migraine Relief Massage', duration: '45 min', price: 95, desc: 'Targeted head, neck, and shoulder massage to ease tension headaches and migraines.', image: 'https://images.pexels.com/photos/3998013/pexels-photo-3998013.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { id: 'desert-stone', name: 'Desert Stone Massage', duration: '60–120 min', price: 120, desc: 'Heated Arizona river stones melt tension from deep within.', image: 'https://images.pexels.com/photos/3997989/pexels-photo-3997989.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { id: 'sonoran-deep', name: 'Sonoran Deep Tissue', duration: '60–120 min', price: 120, desc: 'Targeted deep-tissue work with locally sourced sage oil.', image: 'https://images.pexels.com/photos/3998037/pexels-photo-3998037.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { id: 'sunset-relax', name: 'Sunset Relaxation', duration: '60–120 min', price: 120, desc: 'Gentle, flowing strokes paired with desert botanical aromatherapy.', image: 'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { id: 'monsoon-recovery', name: 'Monsoon Recovery Sports', duration: '60–120 min', price: 120, desc: 'Athletic recovery massage focusing on overworked muscles.', image: 'https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { id: 'palosanto', name: 'Palo Santo Energy Ritual', duration: '60–120 min', price: 120, desc: 'Energy balancing with palo santo and crystal sound therapy.', image: 'https://images.pexels.com/photos/6198027/pexels-photo-6198027.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { id: 'cactus-cupping', name: 'Cactus Flower Cupping', duration: '60–120 min', price: 120, desc: 'Modern cupping therapy to improve circulation and release fascia.', image: 'https://images.pexels.com/photos/6663584/pexels-photo-6663584.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { id: 'migraine-relief', name: 'Migraine Relief Massage', duration: '60–120 min', price: 120, desc: 'Targeted head, neck, and shoulder massage to ease tension headaches and migraines.', image: 'https://images.pexels.com/photos/3998013/pexels-photo-3998013.jpeg?auto=compress&cs=tinysrgb&w=600' },
     ];
     renderServices();
     renderServiceOptions();
@@ -981,7 +1016,7 @@ function renderServices() {
         <div class="service-meta">
           <div>
             <div class="service-duration">${s.duration}</div>
-            <div class="service-price">$${s.price}</div>
+            <div class="service-price from"><span class="from-label">from</span> $${s.price}</div>
           </div>
           <button class="service-book-btn" onclick="event.stopPropagation();openBooking('${s.id}')">Book Online</button>
         </div>
@@ -1003,7 +1038,7 @@ function renderServiceOptions() {
         <h4>${s.name}</h4>
         <p>${s.duration} · ${s.desc}</p>
       </div>
-      <div class="service-option-price">$${s.price}</div>
+      <div class="service-option-price" style="font-size:1.05rem">from $${s.price}</div>
     </div>
   `).join('');
 }
@@ -1013,6 +1048,8 @@ function selectService(id) {
   document.querySelectorAll('.service-option').forEach(el => {
     el.classList.toggle('selected', el.dataset.id === id);
   });
+  document.getElementById('duration-picker-wrap').style.display = 'block';
+  renderDurationPicker();
   document.getElementById('step1-next').disabled = false;
 }
 
@@ -1079,7 +1116,7 @@ async function loadSlots() {
   const slotsContainer = document.getElementById('time-slots');
   const waitlistPrompt = document.getElementById('waitlist-prompt');
   waitlistPrompt.style.display = 'none';
-  const serviceQuery = selectedService ? `?serviceId=${encodeURIComponent(selectedService.id)}` : '';
+  const serviceQuery = selectedService ? `?serviceId=${encodeURIComponent(selectedService.id)}&durationMin=${selectedDuration}` : `?durationMin=${selectedDuration}`;
 
   try {
     const res = await fetch(`${API_BASE}/api/slots/${selectedDate}${serviceQuery}`);
@@ -1134,7 +1171,7 @@ function showWaitlistForm() {
   services.forEach(s => {
     const opt = document.createElement('option');
     opt.value = s.id;
-    opt.textContent = `${s.name} ($${s.price})`;
+    opt.textContent = `${s.name} (from $${s.price})`;
     select.appendChild(opt);
   });
 
@@ -1176,10 +1213,10 @@ function renderSummary() {
   const summary = document.getElementById('booking-summary');
   summary.innerHTML = `
     <div class="summary-row"><span class="summary-label">Service</span><span class="summary-value">${selectedService.name}</span></div>
-    <div class="summary-row"><span class="summary-label">Duration</span><span class="summary-value">${selectedService.duration}</span></div>
+    <div class="summary-row"><span class="summary-label">Duration</span><span class="summary-value">${selectedDuration} min</span></div>
     <div class="summary-row"><span class="summary-label">Date</span><span class="summary-value">${selectedDate}</span></div>
     <div class="summary-row"><span class="summary-label">Time</span><span class="summary-value">${selectedTime}</span></div>
-    <div class="summary-row bold"><span class="summary-label">Total</span><span class="summary-value">$${selectedService.price}</span></div>
+    <div class="summary-row bold"><span class="summary-label">Total</span><span class="summary-value">$${tierFor(selectedDuration).price}</span></div>
   `;
 }
 
@@ -1199,7 +1236,7 @@ async function submitBooking() {
     const res = await fetch(`${API_BASE}/api/book`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, phone, serviceId: selectedService.id, date: selectedDate, time: selectedTime, notes }),
+      body: JSON.stringify({ name, email, phone, serviceId: selectedService.id, date: selectedDate, time: selectedTime, notes, durationMin: selectedDuration }),
     });
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
@@ -1215,7 +1252,8 @@ async function submitBooking() {
 
   // Reset for next booking
   setTimeout(() => {
-    selectedService = null; selectedDate = null; selectedTime = null;
+    selectedService = null; selectedDate = null; selectedTime = null; selectedDuration = 60;
+    document.getElementById('duration-picker-wrap').style.display = 'none';
     document.querySelectorAll('.service-option, .time-slot').forEach(el => el.classList.remove('selected'));
   }, 100);
 }

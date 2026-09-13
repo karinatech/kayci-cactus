@@ -19,14 +19,24 @@ const SPECIALIST_NAME = process.env.SPECIALIST_NAME || 'Kayci Sonoran';
 const ALL_TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
 
 const DEFAULT_SERVICES = [
-  { id: 'desert-stone',  name: 'Desert Stone Massage',       duration: '75 min', price: 135, desc: 'Heated Arizona river stones melt tension from deep within.', image: 'https://images.pexels.com/photos/3997989/pexels-photo-3997989.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'sonoran-deep',  name: 'Sonoran Deep Tissue',        duration: '60 min', price: 115, desc: 'Targeted deep-tissue work with locally sourced sage oil.', image: 'https://images.pexels.com/photos/3998037/pexels-photo-3998037.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'sunset-relax',  name: 'Sunset Relaxation',          duration: '50 min', price:  95, desc: 'Gentle, flowing strokes paired with desert botanical aromatherapy.', image: 'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'monsoon-recovery', name: 'Monsoon Recovery Sports', duration: '60 min', price: 125, desc: 'Athletic recovery massage focusing on overworked muscles.', image: 'https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'palosanto',     name: 'Palo Santo Energy Ritual',   duration: '45 min', price:  85, desc: 'Energy balancing with palo santo and crystal sound therapy.', image: 'https://images.pexels.com/photos/6198027/pexels-photo-6198027.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'cactus-cupping', name: 'Cactus Flower Cupping',     duration: '50 min', price: 110, desc: 'Modern cupping therapy to improve circulation and release fascia.', image: 'https://images.pexels.com/photos/6663584/pexels-photo-6663584.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'migraine-relief', name: 'Migraine Relief Massage',  duration: '45 min', price:  95, desc: 'Targeted head, neck, and shoulder massage to ease tension headaches and migraines.', image: 'https://images.pexels.com/photos/3998013/pexels-photo-3998013.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'desert-stone',  name: 'Desert Stone Massage',       duration: '60–120 min', price: 120, desc: 'Heated Arizona river stones melt tension from deep within.', image: 'https://images.pexels.com/photos/3997989/pexels-photo-3997989.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'sonoran-deep',  name: 'Sonoran Deep Tissue',        duration: '60–120 min', price: 120, desc: 'Targeted deep-tissue work with locally sourced sage oil.', image: 'https://images.pexels.com/photos/3998037/pexels-photo-3998037.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'sunset-relax',  name: 'Sunset Relaxation',          duration: '60–120 min', price: 120, desc: 'Gentle, flowing strokes paired with desert botanical aromatherapy.', image: 'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'monsoon-recovery', name: 'Monsoon Recovery Sports', duration: '60–120 min', price: 120, desc: 'Athletic recovery massage focusing on overworked muscles.', image: 'https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'palosanto',     name: 'Palo Santo Energy Ritual',   duration: '60–120 min', price: 120, desc: 'Energy balancing with palo santo and crystal sound therapy.', image: 'https://images.pexels.com/photos/6198027/pexels-photo-6198027.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'cactus-cupping', name: 'Cactus Flower Cupping',     duration: '60–120 min', price: 120, desc: 'Modern cupping therapy to improve circulation and release fascia.', image: 'https://images.pexels.com/photos/6663584/pexels-photo-6663584.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'migraine-relief', name: 'Migraine Relief Massage',  duration: '60–120 min', price: 120, desc: 'Targeted head, neck, and shoulder massage to ease tension headaches and migraines.', image: 'https://images.pexels.com/photos/3998013/pexels-photo-3998013.jpeg?auto=compress&cs=tinysrgb&w=600' },
 ];
+
+// Session length pricing — same tiers for every service
+const DURATION_TIERS = [
+  { minutes: 60,  price: 120 },
+  { minutes: 90,  price: 160 },
+  { minutes: 120, price: 200 },
+];
+const tierFor = (minutes) => DURATION_TIERS.find(t => t.minutes === Number(minutes)) || null;
+// Services are presented with the shared tier pricing regardless of what was stored
+const withTierPricing = (s) => ({ ...s, duration: '60–120 min', price: DURATION_TIERS[0].price, tiers: DURATION_TIERS });
 
 // ── Site settings shown on the public homepage; overridable from the admin portal ──
 const DEFAULT_SETTINGS = {
@@ -209,7 +219,7 @@ async function handleRequest(event) {
   // Route: /api/services  (public — hidden services excluded)
   if (pathParts[0] === 'api' && pathParts[1] === 'services' && method === 'GET') {
     const services = (await getServices()).filter(s => !s.hidden);
-    return response(200, services);
+    return response(200, services.map(withTierPricing));
   }
 
   // Route: /api/site-settings (public)
@@ -221,11 +231,11 @@ async function handleRequest(event) {
   // Route: /api/slots/:date
   if (pathParts[0] === 'api' && pathParts[1] === 'slots' && pathParts[2] && method === 'GET') {
     const date = pathParts[2];
+    const durationMin = Number(queryParams.durationMin) || 60;
+    const tier = tierFor(durationMin);
+    if (!tier) return response(400, { error: 'durationMin must be one of: ' + DURATION_TIERS.map(t => t.minutes).join(', ') });
     if (calendar.configured()) {
-      const catalog = await getServices();
-      const service = catalog.find(s => s.id === queryParams.serviceId);
-      const duration = calendar.parseDurationMinutes(service ? service.duration : 60);
-      return response(200, await calendar.getAvailableSlots(date, duration));
+      return response(200, await calendar.getAvailableSlots(date, tier.minutes));
     }
     const allItems = await scanByType('appointment');
     const availabilityItems = await scanByType('availability');
@@ -240,11 +250,15 @@ async function handleRequest(event) {
 
   // Route: /api/book (POST)
   if (pathParts[0] === 'api' && pathParts[1] === 'book' && method === 'POST') {
-    const { name, email, phone, serviceId, date, time, notes } = body;
+    const { name, email, phone, serviceId, date, time, notes, durationMin } = body;
     if (!name || !email || !serviceId || !date || !time) return response(400, { error: 'Missing required fields' });
+    const tier = tierFor(durationMin || 60);
+    if (!tier) return response(400, { error: 'durationMin must be one of: ' + DURATION_TIERS.map(t => t.minutes).join(', ') });
     const catalog = (await getServices()).filter(s => !s.hidden);
-    const service = catalog.find(s => s.id === serviceId);
-    if (!service) return response(400, { error: 'Invalid service' });
+    const found = catalog.find(s => s.id === serviceId);
+    if (!found) return response(400, { error: 'Invalid service' });
+    // Booking duration/price come from the shared tiers, not the stored service row
+    const service = { ...found, duration: `${tier.minutes} min`, price: tier.price };
 
     if (calendar.configured()) {
       try {
@@ -447,15 +461,16 @@ async function handleRequest(event) {
   if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'services' && !pathParts[3] && method === 'GET') {
     if (!authed()) return response(401, { error: 'Unauthorized' });
     const services = await getServices();
-    return response(200, services);
+    return response(200, services.map(withTierPricing));
   }
 
   // Route: /api/admin/services (POST) — create a brand-new service
+  // Price/duration come from the shared DURATION_TIERS; only name/desc/image are per-service.
   if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'services' && !pathParts[3] && method === 'POST') {
     if (!authed()) return response(401, { error: 'Unauthorized' });
-    const { name, desc, price, image, duration } = body;
-    if (!name || !desc || price === undefined || !duration) {
-      return response(400, { error: 'name, desc, price, and duration are required' });
+    const { name, desc, image } = body;
+    if (!name || !desc) {
+      return response(400, { error: 'name and desc are required' });
     }
     let serviceId = slugify(body.id || name);
     // Guarantee uniqueness — never overwrite an existing service
@@ -466,11 +481,11 @@ async function handleRequest(event) {
     const sort = existing.length ? Math.max(...existing.map(s => s.sort)) + 1 : 0;
     const item = {
       id: `service_${serviceId}`, type: 'service', serviceId,
-      name, desc, price: Number(price), image: image || '', duration,
+      name, desc, image: image || '',
       sort, hidden: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
     await putItem(item);
-    return response(201, { success: true, service: { id: serviceId, name, desc, price: Number(price), image, duration, sort, hidden: false } });
+    return response(201, { success: true, service: normalizeService(item) });
   }
 
   // Route: /api/admin/services/:id (PUT) — update a service's name, desc, price, image, duration, sort, hidden
@@ -483,9 +498,7 @@ async function handleRequest(event) {
       id: `service_${serviceId}`, type: 'service', serviceId,
       name: body.name !== undefined ? body.name : existing.name,
       desc: body.desc !== undefined ? body.desc : existing.desc,
-      price: body.price !== undefined ? Number(body.price) : existing.price,
       image: body.image !== undefined ? body.image : existing.image,
-      duration: body.duration !== undefined ? body.duration : existing.duration,
       sort: body.sort !== undefined ? Number(body.sort) : (existing.sort === undefined ? 999 : existing.sort),
       hidden: body.hidden !== undefined ? !!body.hidden : !!existing.hidden,
       createdAt: existing.createdAt,
@@ -585,7 +598,7 @@ async function handleRequest(event) {
         name: entry.name,
         email: entry.email,
         phone: entry.phone,
-        service: service || { id: 'custom', name: entry.serviceName, duration: '60 min', price: 0 },
+        service: service ? { ...service, duration: '60 min', price: tierFor(60).price } : { id: 'custom', name: entry.serviceName, duration: '60 min', price: tierFor(60).price },
         date: entry.date,
         time,
         notes: entry.notes,
@@ -603,8 +616,8 @@ async function handleRequest(event) {
       name: entry.name, email: entry.email, phone: entry.phone,
       serviceId: entry.serviceId,
       serviceName: service ? service.name : entry.serviceName,
-      servicePrice: service ? service.price : 0,
-      serviceDuration: service ? service.duration : 'TBD',
+      servicePrice: tierFor(60).price,
+      serviceDuration: '60 min',
       date: entry.date, time: time || 'TBD',
       notes: entry.notes, status: 'confirmed',
       createdAt: new Date().toISOString(), fromWaitlist: true,
