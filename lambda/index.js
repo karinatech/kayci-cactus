@@ -2,6 +2,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, QueryCommand, ScanCommand, GetCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const calendar = require('./googleCalendar');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -30,10 +31,13 @@ async function getServices() {
     if (items.length > 0) {
       // Merge: start with defaults, override with stored values
       const stored = {};
-      items.forEach(s => { stored[s.id] = s; });
+      items.forEach(s => {
+        stored[s.serviceId || s.id] = s;
+        if (s.id) stored[s.id] = s;
+      });
       return DEFAULT_SERVICES.map(d => {
-        const s = stored[d.id];
-        return s ? { id: s.id, name: s.name, duration: s.duration, price: s.price, desc: s.desc, image: s.image } : d;
+        const s = stored[d.id] || stored[`service_${d.id}`];
+        return s ? { id: d.id, name: s.name, duration: s.duration, price: s.price, desc: s.desc, image: s.image } : d;
       });
     }
   } catch (e) { console.log('getServices fallback:', e.message); }
@@ -140,6 +144,12 @@ async function handleRequest(event) {
   // Route: /api/slots/:date
   if (pathParts[0] === 'api' && pathParts[1] === 'slots' && pathParts[2] && method === 'GET') {
     const date = pathParts[2];
+    if (calendar.configured()) {
+      const catalog = await getServices();
+      const service = catalog.find(s => s.id === queryParams.serviceId);
+      const duration = calendar.parseDurationMinutes(service ? service.duration : 60);
+      return response(200, await calendar.getAvailableSlots(date, duration));
+    }
     const allItems = await scanByType('appointment');
     const availabilityItems = await scanByType('availability');
     const availRecord = availabilityItems.find(a => a.date === date);
@@ -148,15 +158,33 @@ async function handleRequest(event) {
       .filter(a => a.date === date && a.status !== 'cancelled')
       .map(a => a.time);
     const available = openSlots.filter(s => !bookedTimes.includes(s));
-    return response(200, { date, available, booked: bookedTimes, openHours: openSlots });
+    return response(200, { date, available, booked: bookedTimes, openHours: openSlots, source: 'local' });
   }
 
   // Route: /api/book (POST)
   if (pathParts[0] === 'api' && pathParts[1] === 'book' && method === 'POST') {
     const { name, email, phone, serviceId, date, time, notes } = body;
     if (!name || !email || !serviceId || !date || !time) return response(400, { error: 'Missing required fields' });
-    const service = SERVICES.find(s => s.id === serviceId);
+    const catalog = await getServices();
+    const service = catalog.find(s => s.id === serviceId);
     if (!service) return response(400, { error: 'Invalid service' });
+
+    if (calendar.configured()) {
+      try {
+        const booked = await calendar.createBooking({ name, email, phone, service, date, time, notes });
+        await sendEmail(SPECIALIST_EMAIL, `New Appointment — ${name} — ${service.name}`,
+          `<h2>New Appointment</h2><p><strong>Client:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p>
+           <p><strong>Phone:</strong> ${phone || 'N/A'}</p><p><strong>Service:</strong> ${service.name} (${service.duration} — $${service.price})</p>
+           <p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${time}</p><p><strong>Notes:</strong> ${notes || 'None'}</p>
+           <p>Written to Google Calendar.</p>`);
+        await sendEmail(email, `Appointment Confirmed — ${service.name}`,
+          `<h2>You're booked, ${name}!</h2><p><strong>Service:</strong> ${service.name}</p>
+           <p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${time}</p>`);
+        return response(201, { success: true, id: booked.id, appointment: booked, source: 'google' });
+      } catch (err) {
+        return response(err.status || 500, { error: err.message || 'Could not create calendar event' });
+      }
+    }
 
     // Check if slot is in admin-set availability
     const availabilityItems = await scanByType('availability');
@@ -199,7 +227,8 @@ async function handleRequest(event) {
     const { name, email, phone, serviceId, date, notes } = body;
     if (!name || !email || !date) return response(400, { error: 'Missing required fields' });
 
-    const service = serviceId ? SERVICES.find(s => s.id === serviceId) : null;
+    const catalog = await getServices();
+    const service = serviceId ? catalog.find(s => s.id === serviceId) : null;
     const id = crypto.randomUUID();
     const entry = {
       id, type: 'waitlist', name, email, phone: phone || '',
@@ -235,15 +264,40 @@ async function handleRequest(event) {
   // Route: /api/admin/appointments (GET)
   if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'appointments' && method === 'GET') {
     if (!authed()) return response(401, { error: 'Unauthorized' });
+    if (calendar.configured()) {
+      const items = await calendar.listAppointments();
+      return response(200, items);
+    }
     const items = await scanByType('appointment');
     items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return response(200, items);
+  }
+
+  if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'calendar' && !pathParts[3] && method === 'GET') {
+    if (!authed()) return response(401, { error: 'Unauthorized' });
+    return response(200, await calendar.status());
+  }
+
+  if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'calendar' && pathParts[3] === 'block' && method === 'POST') {
+    if (!authed()) return response(401, { error: 'Unauthorized' });
+    if (!calendar.configured()) return response(400, { error: 'Google Calendar is not configured' });
+    const { date, startTime, endTime, reason } = body;
+    if (!date || !startTime) return response(400, { error: 'date and startTime required' });
+    const blocked = await calendar.blockTime({ date, startTime, endTime, reason });
+    return response(200, { success: true, appointment: blocked });
   }
 
   // Route: /api/admin/appointments/:id (PATCH)
   if (pathParts[0] === 'api' && pathParts[1] === 'admin' && pathParts[2] === 'appointments' && pathParts[3] && method === 'PATCH') {
     if (!authed()) return response(401, { error: 'Unauthorized' });
     const { status } = body;
+    if (calendar.configured()) {
+      if (status === 'cancelled') {
+        await calendar.cancelBooking(pathParts[3]);
+        return response(200, { success: true, id: pathParts[3], status: 'cancelled' });
+      }
+      return response(400, { error: 'Google bookings are confirmed when created. Cancel to free the slot.' });
+    }
     await updateItem(pathParts[3], { status });
 
     const appt = await getItem(pathParts[3]);
@@ -354,7 +408,26 @@ async function handleRequest(event) {
     const entry = await getItem(pathParts[3]);
     if (!entry) return response(404, { error: 'Waitlist entry not found' });
 
-    const service = entry.serviceId ? SERVICES.find(s => s.id === entry.serviceId) : null;
+    const catalog = await getServices();
+    const service = entry.serviceId ? catalog.find(s => s.id === entry.serviceId) : catalog[0];
+    if (calendar.configured()) {
+      if (!time) return response(400, { error: 'Time slot required' });
+      const appointment = await calendar.createBooking({
+        name: entry.name,
+        email: entry.email,
+        phone: entry.phone,
+        service: service || { id: 'custom', name: entry.serviceName, duration: '60 min', price: 0 },
+        date: entry.date,
+        time,
+        notes: entry.notes,
+      });
+      await updateItem(entry.id, { status: 'confirmed', appointmentId: appointment.id });
+      await sendEmail(entry.email, `Good news! A slot opened up — ${entry.date}`,
+        `<h2>Great news, ${entry.name}!</h2><p>A slot has opened up and we'd love to see you.</p>
+         <p><strong>Date:</strong> ${entry.date}</p><p><strong>Time:</strong> ${time}</p>
+         <p><strong>Service:</strong> ${appointment.serviceName}</p>`);
+      return response(200, { success: true, appointment, waitlistEntry: { ...entry, status: 'confirmed', appointmentId: appointment.id }, source: 'google' });
+    }
     const apptId = crypto.randomUUID();
     const appointment = {
       id: apptId, type: 'appointment',

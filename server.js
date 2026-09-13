@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const calendar = require('./lib/googleCalendar');
 
 const app = express();
 const PORT = process.env.PORT || 3300;
@@ -50,15 +51,26 @@ app.get('/api/services', (req, res) => {
   res.json(SERVICES);
 });
 
-// Get available slots for a date — now driven by admin-set availability
-app.get('/api/slots/:date', (req, res) => {
+// Get available slots for a date — Google Calendar when configured
+app.get('/api/slots/:date', async (req, res) => {
   const { date } = req.params;
-  const openSlots = availability[date] || [];
-  const bookedTimes = appointments
-    .filter(a => a.date === date && a.status !== 'cancelled')
-    .map(a => a.time);
-  const available = openSlots.filter(s => !bookedTimes.includes(s));
-  res.json({ date, available, booked: bookedTimes, openHours: openSlots });
+  const serviceId = req.query.serviceId;
+  try {
+    if (calendar.configured()) {
+      const service = SERVICES.find(s => s.id === serviceId);
+      const duration = calendar.parseDurationMinutes(service ? service.duration : 60);
+      return res.json(await calendar.getAvailableSlots(date, duration));
+    }
+    const openSlots = availability[date] || [];
+    const bookedTimes = appointments
+      .filter(a => a.date === date && a.status !== 'cancelled')
+      .map(a => a.time);
+    const available = openSlots.filter(s => !bookedTimes.includes(s));
+    res.json({ date, available, booked: bookedTimes, openHours: openSlots, source: 'local' });
+  } catch (err) {
+    console.error('slots error', err);
+    res.status(err.status || 500).json({ error: err.message || 'Could not load slots' });
+  }
 });
 
 // Check if waitlist is available for a date (i.e. no open slots or all open slots are booked)
@@ -83,13 +95,46 @@ app.post('/api/book', async (req, res) => {
   const service = SERVICES.find(s => s.id === serviceId);
   if (!service) return res.status(400).json({ error: 'Invalid service' });
 
-  // Check if this slot is in admin-set availability
+  if (calendar.configured()) {
+    try {
+      const booked = await calendar.createBooking({ name, email, phone, service, date, time, notes });
+      try {
+        await transporter.sendMail({
+          from: `"Booking System" <${process.env.SMTP_USER || 'noreply@example.com'}>`,
+          to: SPECIALIST_EMAIL,
+          subject: `New Appointment — ${name} — ${service.name}`,
+          html: `<h2>New Appointment</h2>
+            <p><strong>Client:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
+            <p><strong>Service:</strong> ${service.name} (${service.duration} — $${service.price})</p>
+            <p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${time}</p>
+            <p><strong>Notes:</strong> ${notes || 'None'}</p>
+            <p>This booking was written to Google Calendar.</p>`,
+        });
+      } catch (err) { console.log('Email send skipped:', err.message); }
+      try {
+        await transporter.sendMail({
+          from: `"${SPECIALIST_NAME}" <${process.env.SMTP_USER || 'noreply@example.com'}>`,
+          to: email,
+          subject: `Appointment Confirmed — ${service.name}`,
+          html: `<h2>You're booked, ${name}!</h2>
+            <p><strong>Service:</strong> ${service.name}</p><p><strong>Date:</strong> ${date}</p>
+            <p><strong>Time:</strong> ${time}</p><p>We look forward to seeing you.</p>`,
+        });
+      } catch (err) { console.log('Client email skipped:', err.message); }
+      return res.status(201).json({ success: true, id: booked.id, appointment: booked, source: 'google' });
+    } catch (err) {
+      const status = err.status || 500;
+      return res.status(status).json({ error: err.message || 'Could not create calendar event' });
+    }
+  }
+
+  // Fallback: in-memory store when Google is not configured
   const openSlots = availability[date] || [];
   if (!openSlots.includes(time)) {
     return res.status(403).json({ error: 'This time slot is not available. Please join the waitlist.' });
   }
 
-  // Check for double-booking
   const conflict = appointments.find(a => a.date === date && a.time === time && a.status !== 'cancelled');
   if (conflict) return res.status(409).json({ error: 'That time slot is already booked' });
 
@@ -205,16 +250,59 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // Get all appointments
-app.get('/api/admin/appointments', (req, res) => {
+app.get('/api/admin/appointments', async (req, res) => {
   if (!authCheck(req, res)) return;
-  res.json(appointments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  try {
+    if (calendar.configured()) {
+      const items = await calendar.listAppointments();
+      return res.json(items);
+    }
+    res.json(appointments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Could not list appointments' });
+  }
+});
+
+app.get('/api/admin/calendar', async (req, res) => {
+  if (!authCheck(req, res)) return;
+  try {
+    res.json(await calendar.status());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/calendar/block', async (req, res) => {
+  if (!authCheck(req, res)) return;
+  if (!calendar.configured()) return res.status(400).json({ error: 'Google Calendar is not configured' });
+  const { date, startTime, endTime, reason } = req.body;
+  if (!date || !startTime) return res.status(400).json({ error: 'date and startTime required' });
+  try {
+    const blocked = await calendar.blockTime({ date, startTime, endTime, reason });
+    res.json({ success: true, appointment: blocked });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
 });
 
 // Update appointment status
-app.patch('/api/admin/appointments/:id', (req, res) => {
+app.patch('/api/admin/appointments/:id', async (req, res) => {
   if (!authCheck(req, res)) return;
   const { id } = req.params;
   const { status } = req.body;
+
+  if (calendar.configured()) {
+    try {
+      if (status === 'cancelled') {
+        await calendar.cancelBooking(id);
+        return res.json({ success: true, id, status: 'cancelled' });
+      }
+      return res.status(400).json({ error: 'Google bookings are confirmed when created. Cancel to free the slot.' });
+    } catch (err) {
+      return res.status(err.status || 500).json({ error: err.message });
+    }
+  }
+
   const appt = appointments.find(a => a.id === id);
   if (!appt) return res.status(404).json({ error: 'Not found' });
 
@@ -304,9 +392,28 @@ app.post('/api/admin/waitlist/:id/confirm', async (req, res) => {
   const entry = waitlist.find(w => w.id === id);
   if (!entry) return res.status(404).json({ error: 'Waitlist entry not found' });
 
-  // Create an appointment from the waitlist entry
+  const service = entry.serviceId ? SERVICES.find(s => s.id === entry.serviceId) : SERVICES[0];
+  if (calendar.configured()) {
+    if (!time) return res.status(400).json({ error: 'Time slot required' });
+    try {
+      const appointment = await calendar.createBooking({
+        name: entry.name,
+        email: entry.email,
+        phone: entry.phone,
+        service: service || { id: 'custom', name: entry.serviceName, duration: '60 min', price: 0 },
+        date: entry.date,
+        time,
+        notes: entry.notes,
+      });
+      entry.status = 'confirmed';
+      entry.appointmentId = appointment.id;
+      return res.json({ success: true, appointment, waitlistEntry: entry, source: 'google' });
+    } catch (err) {
+      return res.status(err.status || 500).json({ error: err.message });
+    }
+  }
+
   const apptId = crypto.randomUUID();
-  const service = entry.serviceId ? SERVICES.find(s => s.id === entry.serviceId) : null;
   const appointment = {
     id: apptId,
     name: entry.name, email: entry.email, phone: entry.phone,

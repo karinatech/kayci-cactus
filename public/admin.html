@@ -206,7 +206,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab-btn active" data-tab="appointments" onclick="switchTab('appointments')">Appointments <span class="tab-badge pending" id="appt-badge" style="display:none">0</span></button>
-      <button class="tab-btn" data-tab="availability" onclick="switchTab('availability')">Availability</button>
+      <button class="tab-btn" data-tab="availability" onclick="switchTab('availability')">Calendar</button>
       <button class="tab-btn" data-tab="waitlist" onclick="switchTab('waitlist')">Waitlist <span class="tab-badge waiting" id="wl-badge" style="display:none">0</span></button>
       <button class="tab-btn" data-tab="services" onclick="switchTab('services')">Services</button>
     </div>
@@ -231,40 +231,61 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
     <!-- AVAILABILITY TAB -->
     <div class="tab-content" id="tab-availability">
       <div class="avail-section">
-        <h3>Set Open Hours for a Date</h3>
-        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1rem;">Select a date, toggle the time slots you're available, and save. Clients will only see these slots when booking.</p>
-        <div class="avail-date-row">
-          <div>
-            <label>Date</label>
-            <input type="date" id="avail-date" onchange="loadExistingAvailability()">
-          </div>
-          <button class="avail-save-btn" onclick="saveAvailability()">Save Availability</button>
-          <button class="avail-clear-btn" onclick="clearAvailability()">Clear Date</button>
+        <h3>Google Calendar</h3>
+        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1rem;">
+          Open hours and bookings live on Google Calendar. Add personal events or use Block Time below to hide slots on the website.
+        </p>
+        <div id="calendar-status" style="padding:1rem;background:var(--sand,#f6efe6);margin-bottom:1.25rem;font-size:0.9rem;color:var(--ink-soft);">
+          Checking Google Calendar connection…
         </div>
-        <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:0.5rem;">Toggle Open Slots</label>
-        <div class="slot-grid" id="avail-slots"></div>
+        <a href="https://calendar.google.com" target="_blank" rel="noopener" class="avail-save-btn" style="display:inline-block;text-decoration:none;">Open Google Calendar</a>
       </div>
 
       <div class="avail-section">
-        <h3>Set Recurring Hours (Date Range)</h3>
-        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1rem;">Set the same open hours across a range of dates (e.g., Mon–Fri 9–5).</p>
+        <h3>Block Time</h3>
+        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1rem;">Creates a busy event so clients cannot book over lunch, PTO, or an early close.</p>
         <div class="avail-date-row">
           <div>
-            <label>Start Date</label>
-            <input type="date" id="avail-start-date">
+            <label>Date</label>
+            <input type="date" id="block-date">
           </div>
           <div>
-            <label>End Date</label>
-            <input type="date" id="avail-end-date">
+            <label>Start</label>
+            <input type="time" id="block-start" value="12:00">
           </div>
-          <button class="avail-save-btn" onclick="saveBulkAvailability()">Apply to Range</button>
+          <div>
+            <label>End</label>
+            <input type="time" id="block-end" value="13:00">
+          </div>
         </div>
-        <label style="font-size:0.8rem;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:0.5rem;">Toggle Slots for Range</label>
-        <div class="slot-grid" id="avail-bulk-slots"></div>
+        <div style="margin:0.8rem 0 1rem">
+          <label>Reason (optional)</label>
+          <input type="text" id="block-reason" placeholder="Lunch, out of office, travel…" style="width:100%;padding:0.6rem 0.8rem;margin-top:0.3rem">
+        </div>
+        <button class="avail-save-btn" onclick="blockCalendarTime()">Block on Google Calendar</button>
+      </div>
+
+      <div class="avail-section" style="border-top:2px solid var(--terracotta);padding-top:1.25rem;margin-top:0.5rem;">
+        <h3 style="color:var(--terracotta);">  Mark Day Off</h3>
+        <p style="color:var(--ink-soft);font-size:0.9rem;margin-bottom:1rem;">Block the <strong>entire working day</strong> with one click. Perfect for vacation, sick day, or personal time. Start/end times are filled automatically from your working hours.</p>
+        <div class="avail-date-row">
+          <div>
+            <label>Date</label>
+            <input type="date" id="dayoff-date" onchange="previewDayOffHours()">
+          </div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:0.2rem;">
+            <div id="dayoff-hours-preview" style="font-size:0.85rem;color:var(--muted);"></div>
+          </div>
+        </div>
+        <div style="margin:0.8rem 0 1rem">
+          <label>Reason (optional)</label>
+          <input type="text" id="dayoff-reason" placeholder="Vacation, sick day, personal…" style="width:100%;padding:0.6rem 0.8rem;margin-top:0.3rem">
+        </div>
+        <button class="avail-save-btn" onclick="markDayOff()" style="background:var(--terracotta);">  Mark Full Day Off</button>
       </div>
 
       <div class="avail-existing">
-        <h4>Currently Set Open Hours</h4>
+        <h4>Upcoming on Google Calendar</h4>
         <div id="avail-existing-list"></div>
       </div>
     </div>
@@ -367,7 +388,7 @@ function switchTab(tab) {
 
 // ── Load all data ──
 async function loadAll() {
-  await Promise.all([loadAppointments(), loadWaitlist(), loadAvailability(), loadServicesAdmin()]);
+  await Promise.all([loadAppointments(), loadWaitlist(), loadAvailability(), loadServicesAdmin(), loadCalendarStatus()]);
   renderAll();
 }
 
@@ -415,7 +436,7 @@ function renderAppointments() {
       <div class="appt-info">
         <div class="appt-top">
           <span class="appt-name">${a.name}</span>
-          <span class="appt-service">${a.serviceName} · $${a.servicePrice}</span>
+          <span class="appt-service">${a.serviceName}${a.servicePrice !== '' && a.servicePrice !== undefined ? ' · $' + a.servicePrice : ''}</span>
           <span class="appt-badge ${a.status}">${a.status}</span>
           ${a.fromWaitlist ? '<span style="font-size:0.75rem;color:var(--gold);font-weight:600;">⭐ FROM WAITLIST</span>' : ''}
         </div>
@@ -429,6 +450,7 @@ function renderAppointments() {
         ${a.notes ? `<div class="appt-notes">"${a.notes}"</div>` : ''}
       </div>
       <div class="appt-actions">
+        ${a.htmlLink ? `<a class="btn-confirm" href="${a.htmlLink}" target="_blank" rel="noopener" style="text-decoration:none">Open in Google</a>` : ''}
         ${a.status === 'pending' ? `<button class="btn-confirm" onclick="updateStatus('${a.id}','confirmed')">Confirm</button>` : ''}
         ${a.status !== 'cancelled' ? `<button class="btn-cancel" onclick="updateStatus('${a.id}','cancelled')">Cancel</button>` : ''}
       </div>
@@ -577,42 +599,139 @@ async function loadAvailability() {
   } catch (e) { console.error('Error loading availability:', e); }
 }
 
+async function loadCalendarStatus() {
+  const el = document.getElementById('calendar-status');
+  if (!el) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/calendar`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+    const data = await res.json();
+    window.calendarStatus = data;
+    if (data.configured) {
+      const hours = data.workingHours || {};
+      const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const hoursLine = days.map((d, i) => {
+        const w = hours[i];
+        return w ? `${d} ${w[0]}–${w[1]}` : `${d} closed`;
+      }).join(' · ');
+      el.innerHTML = `<strong>Connected</strong> (${data.mode || 'google'}) · ${data.timezone}<br>${hoursLine}<br>Buffer ${data.bufferMinutes} min after each session.`;
+    } else {
+      el.innerHTML = `<strong>Not connected.</strong> Add Google credentials to <code>.env</code> — see GOOGLE_CALENDAR.md. Until then, the old manual availability still works locally.`;
+    }
+  } catch (e) {
+    el.textContent = 'Could not load Calendar status.';
+  }
+}
+
+async function blockCalendarTime() {
+  const date = document.getElementById('block-date').value;
+  const startTime = document.getElementById('block-start').value;
+  const endTime = document.getElementById('block-end').value;
+  const reason = document.getElementById('block-reason').value.trim();
+  if (!date || !startTime) { alert('Pick a date and start time.'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/calendar/block`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ date, startTime, endTime, reason })
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Could not block time'); return; }
+    showToast('Blocked on Google Calendar');
+    await loadAppointments();
+    renderAvailabilityManager();
+    renderAppointments();
+    updateStats();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+// ── Mark Day Off ──
+// Returns the working hours for a given date string (YYYY-MM-DD) from calendarStatus.
+// Falls back to default Mon-Fri 9-6, Sat 9-4, Sun closed.
+function getWorkingHoursForDate(dateStr) {
+  const cs = window.calendarStatus;
+  if (cs && cs.workingHours) {
+    const d = new Date(dateStr + 'T12:00:00');
+    const dow = d.getDay(); // 0=Sun
+    const w = cs.workingHours[dow];
+    if (w && Array.isArray(w) && w.length === 2) return w;
+    return null; // null means closed
+  }
+  // Fallback defaults (Phoenix time)
+  const defaults = { 0: null, 1: ['09:00','18:00'], 2: ['09:00','18:00'], 3: ['09:00','18:00'], 4: ['09:00','18:00'], 5: ['09:00','18:00'], 6: ['09:00','16:00'] };
+  const d = new Date(dateStr + 'T12:00:00');
+  return defaults[d.getDay()] || null;
+}
+
+function previewDayOffHours() {
+  const date = document.getElementById('dayoff-date').value;
+  const preview = document.getElementById('dayoff-hours-preview');
+  if (!date) { preview.textContent = ''; return; }
+  const hours = getWorkingHoursForDate(date);
+  if (!hours) {
+    preview.innerHTML = '<span style="color:var(--muted);">  Closed day — already off!</span>';
+  } else {
+    preview.innerHTML = `<span style="color:var(--sage);">  ${hours[0]} – ${hours[1]}</span>`;
+  }
+}
+
+async function markDayOff() {
+  const date = document.getElementById('dayoff-date').value;
+  const reason = document.getElementById('dayoff-reason').value.trim() || 'Day off';
+  if (!date) { alert('Pick a date first.'); return; }
+
+  const hours = getWorkingHoursForDate(date);
+  if (!hours) {
+    alert('This day is already marked as closed (no working hours). Nothing to block.');
+    return;
+  }
+
+  const [startTime, endTime] = hours;
+
+  if (!confirm(`Block the entire day of ${date} (${startTime} – ${endTime}) as "${reason}"?`)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/calendar/block`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ date, startTime, endTime, reason })
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Could not block day'); return; }
+    showToast(`  Day off — ${date} blocked`);
+    // Clear form
+    document.getElementById('dayoff-date').value = '';
+    document.getElementById('dayoff-reason').value = '';
+    document.getElementById('dayoff-hours-preview').textContent = '';
+    await loadAppointments();
+    renderAvailabilityManager();
+    renderAppointments();
+    updateStats();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
 function renderAvailabilityManager() {
-  // Render slot toggle grids
-  const slotsEl = document.getElementById('avail-slots');
-  const bulkSlotsEl = document.getElementById('avail-bulk-slots');
-
-  slotsEl.innerHTML = ALL_SLOTS.map(slot => `
-    <div class="slot-toggle" data-slot="${slot}" onclick="toggleSlot('${slot}', 'single')">${slot}</div>
-  `).join('');
-
-  bulkSlotsEl.innerHTML = ALL_SLOTS.map(slot => `
-    <div class="slot-toggle" data-slot="${slot}" onclick="toggleSlot('${slot}', 'bulk')">${slot}</div>
-  `).join('');
-
-  selectedAvailSlots.clear();
-  selectedBulkSlots.clear();
-
-  // Render existing availability
   renderExistingAvailability();
 }
 
 function renderExistingAvailability() {
   const list = document.getElementById('avail-existing-list');
-  const dates = Object.keys(availabilityData).sort();
-
-  if (dates.length === 0) {
-    list.innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">No open hours set yet. Use the form above to set availability.</p>';
+  if (!list) return;
+  const upcoming = (allAppointments || []).filter(a => a.status !== 'cancelled');
+  if (upcoming.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">No upcoming Calendar events yet.</p>';
     return;
   }
-
-  list.innerHTML = dates.map(date => `
+  list.innerHTML = upcoming.map(a => `
     <div class="avail-date-card">
       <div>
-        <div class="avail-date-card-date">${date}</div>
-        <div class="avail-date-card-slots">${availabilityData[date].join(' · ')}</div>
+        <div class="avail-date-card-date">${a.date} · ${a.time}</div>
+        <div class="avail-date-card-slots">${a.serviceName}${a.name ? ' — ' + a.name : ''}</div>
       </div>
-      <button class="avail-date-card-remove" onclick="removeAvailability('${date}')">Remove</button>
+      ${a.htmlLink ? `<a href="${a.htmlLink}" target="_blank" rel="noopener" class="avail-date-card-remove" style="text-decoration:none">Open</a>` : ''}
     </div>
   `).join('');
 }

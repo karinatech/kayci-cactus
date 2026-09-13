@@ -827,7 +827,7 @@ footer a:hover { color: var(--gold); }
         <div class="date-picker">
           <label>Select Date</label>
           <input type="date" id="booking-date" onchange="loadSlots()">
-          <p id="date-hint" style="font-size:0.8rem;color:var(--text);margin-top:0.4rem;">Only dates with open hours will show available times.</p>
+          <p id="date-hint" style="font-size:0.8rem;color:var(--text);margin-top:0.4rem;">Times come from Google Calendar. Busy time is hidden automatically. Closed days can join the waitlist.</p>
         </div>
         <div class="time-picker">
           <label>Available Times</label>
@@ -876,7 +876,7 @@ footer a:hover { color: var(--gold); }
           <div class="success-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </div>
-          <h3>Booking Request Sent!</h3>
+          <h3>You're Booked!</h3>
           <p>We've received your request and sent a confirmation email. You'll hear from us shortly to confirm your appointment.</p>
           <button class="hero-cta" style="margin-top:1rem" onclick="closeBooking()">Close</button>
         </div>
@@ -1043,6 +1043,7 @@ document.getElementById('booking-modal').addEventListener('click', (e) => {
 function goToStep(step) {
   if (step === 2 && !selectedService) return;
   if (step === 3 && !selectedTime) return;
+  if (step === 2) loadSlots();
 
   // Update steps
   document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
@@ -1069,25 +1070,25 @@ function goToStep(step) {
 }
 
 // ── Load available time slots — now driven by admin-set availability ──
-async function loadSlots() {
+async async function loadSlots() {
   selectedDate = document.getElementById('booking-date').value;
   if (!selectedDate) return;
 
   const slotsContainer = document.getElementById('time-slots');
   const waitlistPrompt = document.getElementById('waitlist-prompt');
   waitlistPrompt.style.display = 'none';
+  const serviceQuery = selectedService ? `?serviceId=${encodeURIComponent(selectedService.id)}` : '';
 
   try {
-    const res = await fetch(`${API_BASE}/api/slots/${selectedDate}`);
+    const res = await fetch(`${API_BASE}/api/slots/${selectedDate}${serviceQuery}`);
     const data = await res.json();
 
     if (!data.available || data.available.length === 0) {
-      // No open slots — show waitlist prompt
-      if (data.openHours && data.openHours.length > 0) {
-        // All open slots are booked
+      if (data.closed) {
+        slotsContainer.innerHTML = `<p style="color:var(--text);font-size:0.9rem;grid-column:1/-1">The studio is closed this day. Join the waitlist if you'd like a callback.</p>`;
+      } else if (data.openHours && data.openHours.length > 0) {
         slotsContainer.innerHTML = `<p style="color:var(--text);font-size:0.9rem;grid-column:1/-1">All open slots for this date are booked.</p>`;
       } else {
-        // No availability set for this date at all
         slotsContainer.innerHTML = `<p style="color:var(--text);font-size:0.9rem;grid-column:1/-1">No open hours set for this date yet.</p>`;
       }
       waitlistPrompt.style.display = 'block';
