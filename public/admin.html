@@ -200,7 +200,6 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--in
     </div>
     <button class="login-btn" onclick="adminLogin()">Log In →</button>
     <div class="login-error" id="login-error">Invalid password. Try again.</div>
-    <div class="login-hint">Prototype password: saguaro2024</div>
   </div>
 </div>
 
@@ -426,7 +425,6 @@ let selectedAvailSlots = new Set();
 let selectedBulkSlots = new Set();
 let pendingWlId = null;
 
-const ADMIN_PASS = 'saguaro2024';
 const ALL_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
 
 // ── Auth ──
@@ -439,10 +437,12 @@ async function adminLogin() {
       body: JSON.stringify({ password: pass })
     });
     ok = res.ok;
-    // 404/stale deployment → allow local fallback so the portal stays usable
-    if (!ok && res.status !== 401) ok = pass === ADMIN_PASS;
+    if (!ok && res.status !== 401) {
+      // API unreachable or misrouted — don't attempt a client-side fallback
+      document.getElementById('login-error').textContent = 'Could not reach the booking server. Try again or check the deployment.';
+    }
   } catch (e) {
-    ok = pass === ADMIN_PASS; // offline/local fallback
+    document.getElementById('login-error').textContent = 'Could not reach the booking server. Try again or check the deployment.';
   }
   if (ok) {
     adminToken = pass;
