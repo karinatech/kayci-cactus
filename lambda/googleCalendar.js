@@ -2,8 +2,11 @@
 
 const { JWT, OAuth2Client } = require('google-auth-library');
 
-const TIMEZONE = process.env.GOOGLE_TIMEZONE || 'America/Phoenix';
-const TZ_OFFSET = process.env.GOOGLE_TZ_OFFSET || '-07:00';
+const TIMEZONE = (process.env.GOOGLE_TIMEZONE || 'America/Phoenix').trim() || 'America/Phoenix';
+const TZ_OFF_RAW = (process.env.GOOGLE_TZ_OFFSET || '-07:00').trim();
+// Normalize to RFC3339 offset "-07:00" even if set as "-0700" or "-7:00".
+const _tzm = Tel => { const m = /^([+-])(\d{1,2}):?(\d{2})$/.exec(Tel); return m ? `${m[1]}${m[2].padStart(2, '0')}:${m[3]}` : Tel; };
+const TZ_OFFSET = _tzm(TZ_OFF_RAW);
 const BUFFER_MIN = Number(process.env.GOOGLE_BUFFER_MINUTES || 15);
 const SLOT_STEP_MIN = Number(process.env.GOOGLE_SLOT_STEP_MINUTES || 30);
 
@@ -34,7 +37,7 @@ function configured() {
 }
 
 function bookingCalendarId() {
-  return process.env.GOOGLE_CALENDAR_ID;
+  return (process.env.GOOGLE_CALENDAR_ID || '').trim();
 }
 
 function freeBusyCalendarIds() {
@@ -155,7 +158,11 @@ async function gfetch(url, options = {}) {
     body = { raw };
   }
   if (!response.ok) {
-    const message = (body && body.error && body.error.message) || raw || response.statusText;
+    let message = (body && body.error && body.error.message) || raw || response.statusText;
+    if (body && body.error && Array.isArray(body.error.errors) && body.error.errors.length) {
+      message += ' | ' + body.error.errors.map((e) => `${e.location || e.parameter || e.field || ''}: ${e.reason || e.message}`).join('; ');
+    }
+    console.error('Google Calendar API error body:', JSON.stringify(body));
     const error = new Error(`Google Calendar API ${response.status}: ${message}`);
     error.status = response.status;
     error.body = body;
@@ -352,6 +359,13 @@ async function cancelBooking(eventId) {
 }
 
 async function blockTime({ date, startTime, endTime, reason }) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) {
+    throw new Error(`Invalid date "${date}" — expected YYYY-MM-DD`);
+  }
+  if (!startTime) throw new Error('Missing startTime');
+  if (!/^\d{2}:\d{2}$/.test(to24h(String(startTime)))) {
+    throw new Error(`Invalid startTime "${startTime}"`);
+  }
   const start = phoenixDateTime(date, startTime);
   const end = phoenixDateTime(date, endTime || addMinutes(startTime, 60));
   const created = await gfetch(

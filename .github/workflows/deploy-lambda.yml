@@ -1,0 +1,57 @@
+# Deploys the Lambda function whenever files under lambda/ change on main.
+# Requires repo secrets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+name: Deploy Lambda
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lambda/**'
+      - '.github/workflows/deploy-lambda.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-west-2
+  FUNCTION_NAME: kayci-cactus-api
+  S3_BUCKET: kayci-cactus-deploy-061051222996
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: lambda
+        run: npm install --omit=dev
+
+      - name: Build deployment package
+        run: |
+          cd lambda
+          rm -f ../lambda.zip
+          zip -qr ../lambda.zip .
+          cd ..
+          ls -la lambda.zip
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Lambda
+        run: |
+          aws s3 cp lambda.zip s3://${S3_BUCKET}/lambda.zip
+          aws lambda update-function-code \
+            --function-name ${FUNCTION_NAME} \
+            --s3-bucket ${S3_BUCKET} \
+            --s3-key lambda.zip
+          aws lambda wait function-updated --function-name ${FUNCTION_NAME}
+          aws lambda get-function-configuration \
+            --function-name ${FUNCTION_NAME} \
+            --query '{CodeSize:CodeSize,LastModified:LastModified}'
