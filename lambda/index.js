@@ -614,6 +614,10 @@ async function handleRequest(event) {
           date: entry.date,
           time,
           notes: entry.notes,
+          // Admin is manually assigning a slot for a waitlisted client —
+          // often because a slot just opened (e.g. a cancellation Google
+          // hasn't synced yet). Skip the public-facing conflict check.
+          allowConflict: true,
         });
       } catch (err) {
         console.log('waitlist confirm createBooking failed:', err.message);

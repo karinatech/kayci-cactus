@@ -283,13 +283,15 @@ function eventToAppointment(event) {
   };
 }
 
-async function createBooking({ name, email, phone, address, service, date, time, notes }) {
+async function createBooking({ name, email, phone, address, service, date, time, notes, allowConflict = false }) {
   const duration = parseDurationMinutes(service.duration);
-  const slots = await getAvailableSlots(date, duration);
-  if (!slotIsOpen(slots, time)) {
-    const error = new Error('That time slot is no longer available');
-    error.status = 409;
-    throw error;
+  if (!allowConflict) {
+    const slots = await getAvailableSlots(date, duration);
+    if (!slotIsOpen(slots, time)) {
+      const error = new Error('That time slot is no longer available');
+      error.status = 409;
+      throw error;
+    }
   }
 
   const addAttendees = process.env.GOOGLE_ADD_ATTENDEES === 'true';

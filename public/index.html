@@ -917,6 +917,10 @@ footer a:hover { color: var(--gold); }
           <input type="tel" id="waitlist-phone" placeholder="(623) 555-0123">
         </div>
         <div class="form-field">
+          <label>Your Address — Kayci comes to you</label>
+          <input type="text" id="waitlist-address" placeholder="123 Main St, Verrado, AZ 85396">
+        </div>
+        <div class="form-field">
           <label>Preferred Service (optional)</label>
           <select id="waitlist-service" style="width:100%;padding:0.8rem 1rem;border:2px solid var(--border);font-size:1rem;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text-dark);">
             <option value="">Any available service</option>
@@ -1188,6 +1192,7 @@ async function submitWaitlist() {
   const name = document.getElementById('waitlist-name').value.trim();
   const email = document.getElementById('waitlist-email').value.trim();
   const phone = document.getElementById('waitlist-phone').value.trim();
+  const address = document.getElementById('waitlist-address').value.trim();
   const serviceId = document.getElementById('waitlist-service').value;
   const notes = document.getElementById('waitlist-notes').value.trim();
 
@@ -1200,7 +1205,7 @@ async function submitWaitlist() {
     const res = await fetch(`${API_BASE}/api/waitlist`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, phone, serviceId: serviceId || null, date: selectedDate, notes }),
+      body: JSON.stringify({ name, email, phone, address, serviceId: serviceId || null, date: selectedDate, notes }),
     });
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
