@@ -55,17 +55,17 @@ const withTierPricing = (s) => ({ ...s, duration: '60–120 min', price: DURATIO
 // ── Site settings (local dev: in-memory copy; production: DynamoDB) ──
 const DEFAULT_SETTINGS = {
   businessName: 'Kayci Sonoran',
-  heroTag: 'Verrido · Buckeye, AZ',
-  heroTitle: 'Kayci Sonoran|Massage & Therapy',
-  heroSubtitle: 'Indulge in the ultimate massage experience. Escape the everyday and treat yourself to therapies designed for total relaxation and renewal.',
+  heroTag: 'Mobile Massage · Verrado · Buckeye · Goodyear',
+  heroTitle: 'Massage & Therapy|That Comes to You',
+  heroSubtitle: "Kayci brings the massage table to your home — no driving, no waiting room, no re-entry into traffic afterward. Licensed therapist, premium oils, fresh linens, and 60/90/120-minute sessions delivered to your door across Verrado, Buckeye, and Goodyear.",
   servicesHeading: 'Step into a world of luxury and serenity',
-  servicesSub: 'Each treatment blends professional technique with the calming essence of the Sonoran Desert.',
-  aboutLabel: 'Experience the Difference!',
-  aboutHeading: 'A sanctuary rooted in Arizona tradition',
-  aboutText: "Our practice draws from the healing traditions of the Southwest. From the warmth of sun-baked river stones to the calming scent of desert sage, every detail is designed to reconnect you with the natural rhythm of the land.\n\nWhether you're recovering from a hike in the White Tank Mountains or decompressing after a long work week, we tailor every session to your body's needs.",
-  ctaHeading: 'Relax Effortlessly!',
-  ctaText: 'Book your spa experience today. Your moment of calm is one click away.',
-  footerLine: 'Serving Verrado & Buckeye, AZ · Licensed in Arizona',
+  servicesSub: 'Every treatment is performed in the comfort of your home. Pick your service and session length — we bring everything else.',
+  aboutLabel: 'Mobile Massage, Done Right!',
+  aboutHeading: 'A spa-quality session — without leaving home',
+  aboutText: "Kayci Sonoran is a fully mobile massage practice serving the West Valley. The table, linens, oils, and calm all travel to you — you just open the door.\n\nFrom the warmth of sun-baked river stones to the calming scent of desert sage, every treatment draws on Southwest healing traditions, tailored to what your body needs today.",
+  ctaHeading: "Relax, We\u2019re On Our Way",
+  ctaText: 'Book online and Kayci arrives at your door with everything needed for your session. Your calm is one click away — no commute required.',
+  footerLine: 'Mobile massage serving Verrado, Buckeye & Goodyear, AZ · Licensed in Arizona',
   accentColor: '#d4846a',
   accentDark: '#b5644a',
 };
@@ -129,6 +129,8 @@ app.post('/api/book', async (req, res) => {
   if (!name || !email || !serviceId || !date || !time) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
+  const addr = String(req.body.address || '').trim();
+  if (!addr) return res.status(400).json({ error: 'Appointment address is required — Kayci comes to your location' });
 
   const tier = tierFor(req.body.durationMin || 60);
   if (!tier) return res.status(400).json({ error: 'durationMin must be one of: ' + DURATION_TIERS.map(t => t.minutes).join(', ') });
@@ -138,7 +140,7 @@ app.post('/api/book', async (req, res) => {
 
   if (calendar.configured()) {
     try {
-      const booked = await calendar.createBooking({ name, email, phone, service, date, time, notes });
+      const booked = await calendar.createBooking({ name, email, phone, address: addr, service, date, time, notes });
       try {
         await transporter.sendMail({
           from: `"Booking System" <${process.env.SMTP_USER || 'noreply@example.com'}>`,
@@ -147,10 +149,11 @@ app.post('/api/book', async (req, res) => {
           html: `<h2>New Appointment</h2>
             <p><strong>Client:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p>
             <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
+            <p><strong>Client's Address:</strong> ${addr}</p>
             <p><strong>Service:</strong> ${service.name} (${service.duration} — $${service.price})</p>
             <p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${time}</p>
             <p><strong>Notes:</strong> ${notes || 'None'}</p>
-            <p>This booking was written to Google Calendar.</p>`,
+            <p>This booking was written to Google Calendar (event location set to client's address).</p>`,
         });
       } catch (err) { console.log('Email send skipped:', err.message); }
       try {
@@ -183,7 +186,7 @@ app.post('/api/book', async (req, res) => {
   const appointment = {
     id, name, email, phone: phone || '', serviceId,
     serviceName: service.name, servicePrice: service.price, serviceDuration: service.duration,
-    date, time, notes: notes || '', status: 'pending',
+    date, time, notes: notes || '', address: addr, status: 'pending',
     createdAt: new Date().toISOString(),
   };
 
@@ -198,6 +201,7 @@ app.post('/api/book', async (req, res) => {
       html: `<h2>New Appointment Request</h2>
         <p><strong>Client:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p>
         <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
+        <p><strong>Client's Address:</strong> ${addr}</p>
         <p><strong>Service:</strong> ${service.name} (${service.duration} — $${service.price})</p>
         <p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${time}</p>
         <p><strong>Notes:</strong> ${notes || 'None'}</p>

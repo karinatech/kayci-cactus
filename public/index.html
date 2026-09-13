@@ -669,9 +669,9 @@ footer a:hover { color: var(--gold); }
   </svg>
 
   <div class="hero-content">
-    <div class="hero-tag" id="hero-tag">Verrido · Buckeye, AZ</div>
+    <div class="hero-tag" id="hero-tag">Mobile Massage · Verrado · Buckeye · Goodyear</div>
     <h1 id="hero-title">Kayci Sonoran<br><em>Massage & Therapy</em></h1>
-    <p id="hero-subtitle">Indulge in the ultimate massage experience. Escape the everyday and treat yourself to therapies designed for total relaxation and renewal.</p>
+    <p id="hero-subtitle">Professional massage therapy that comes to you. Skip the drive — a licensed therapist arrives at your home with table, linens, and oils. Total relaxation, zero commute.</p>
     <div class="hero-cta-group">
       <button class="hero-cta" onclick="openBooking()">Book Online</button>
       <a href="#services" class="hero-cta-ghost">Our Services</a>
@@ -873,6 +873,11 @@ footer a:hover { color: var(--gold); }
         <div class="form-field">
           <label>Phone Number</label>
           <input type="tel" id="client-phone" placeholder="(602) 555-0123">
+        </div>
+        <div class="form-field">
+          <label>Your Address — where should we come?</label>
+          <input type="text" id="client-address" placeholder="123 Desert Willow Ln, Buckeye, AZ 85326">
+          <p style="font-size:0.8rem;color:var(--text);margin-top:0.3rem;">Mobile service — Kayci brings the massage table, linens, and oils to your home. Include gate/apartment codes in notes.</p>
         </div>
         <div class="form-field">
           <label>Notes (optional)</label>
@@ -1214,6 +1219,7 @@ function renderSummary() {
   summary.innerHTML = `
     <div class="summary-row"><span class="summary-label">Service</span><span class="summary-value">${selectedService.name}</span></div>
     <div class="summary-row"><span class="summary-label">Duration</span><span class="summary-value">${selectedDuration} min</span></div>
+    <div class="summary-row"><span class="summary-label">Service at</span><span class="summary-value" style="font-size:0.85rem">Your home</span></div>
     <div class="summary-row"><span class="summary-label">Date</span><span class="summary-value">${selectedDate}</span></div>
     <div class="summary-row"><span class="summary-label">Time</span><span class="summary-value">${selectedTime}</span></div>
     <div class="summary-row bold"><span class="summary-label">Total</span><span class="summary-value">$${tierFor(selectedDuration).price}</span></div>
@@ -1225,10 +1231,16 @@ async function submitBooking() {
   const name = document.getElementById('client-name').value.trim();
   const email = document.getElementById('client-email').value.trim();
   const phone = document.getElementById('client-phone').value.trim();
+  const address = document.getElementById('client-address').value.trim();
   const notes = document.getElementById('client-notes').value.trim();
 
   if (!name || !email) {
     alert('Please enter your name and email.');
+    return;
+  }
+  if (!address) {
+    alert('Please enter the address where you\'d like your massage — Kayci comes to you.');
+    document.getElementById('client-address').focus();
     return;
   }
 
@@ -1236,7 +1248,7 @@ async function submitBooking() {
     const res = await fetch(`${API_BASE}/api/book`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, phone, serviceId: selectedService.id, date: selectedDate, time: selectedTime, notes, durationMin: selectedDuration }),
+      body: JSON.stringify({ name, email, phone, address, serviceId: selectedService.id, date: selectedDate, time: selectedTime, notes, durationMin: selectedDuration }),
     });
     const data = await res.json();
     if (data.error) { alert(data.error); return; }

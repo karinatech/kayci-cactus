@@ -533,6 +533,7 @@ function renderAppointments() {
           <div class="appt-detail-item">⏱ <strong>${a.serviceDuration}</strong></div>
           <div class="appt-detail-item">📧 <strong>${a.email}</strong></div>
           ${a.phone ? `<div class="appt-detail-item">📞 <strong>${a.phone}</strong></div>` : ''}
+          ${a.address ? `<div class="appt-detail-item" style="flex-basis:100%">📍 <strong>${a.address}</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(a.address)}" target="_blank" rel="noopener" style="color:var(--gold);font-size:0.8rem;">(open in maps)</a></div>` : ''}
         </div>
         ${a.notes ? `<div class="appt-notes">"${a.notes}"</div>` : ''}
       </div>

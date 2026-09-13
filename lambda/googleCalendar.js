@@ -269,6 +269,7 @@ function eventToAppointment(event) {
     serviceName: isBlock ? 'Blocked' : (serviceName || summary),
     servicePrice: privateProps.servicePrice ? Number(privateProps.servicePrice) : '',
     serviceDuration: privateProps.serviceDuration || '',
+    address: privateProps.address || event.location || '',
     date: start ? start.slice(0, 10) : '',
     time: event.start && event.start.dateTime ? toLabel(start.slice(11, 16)) : 'All day',
     start,
@@ -281,7 +282,7 @@ function eventToAppointment(event) {
   };
 }
 
-async function createBooking({ name, email, phone, service, date, time, notes }) {
+async function createBooking({ name, email, phone, address, service, date, time, notes }) {
   const duration = parseDurationMinutes(service.duration);
   const slots = await getAvailableSlots(date, duration);
   if (!slotIsOpen(slots, time)) {
@@ -298,10 +299,12 @@ async function createBooking({ name, email, phone, service, date, time, notes })
       `Client: ${name}`,
       `Email: ${email}`,
       `Phone: ${phone || 'N/A'}`,
+      `Address: ${address || 'TBD — call client'}`,
       `Notes: ${notes || 'None'}`,
       'Source: Kayci Cactus website',
     ].join('\n'),
-    location: process.env.STUDIO_ADDRESS || 'Verrado / Buckeye, AZ',
+    // Mobile service: the appointment happens at the client's address
+    location: address || process.env.STUDIO_ADDRESS || 'Verrado / Buckeye, AZ',
     start: { dateTime: phoenixDateTime(date, time), timeZone: TIMEZONE },
     end: { dateTime: phoenixDateTime(date, addMinutes(time, duration)), timeZone: TIMEZONE },
     guestsCanModify: false,
